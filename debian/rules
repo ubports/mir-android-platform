@@ -1,0 +1,60 @@
+#!/usr/bin/make -f
+
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+DEB_HOST_ARCH_ENDIAN ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_ENDIAN)
+EXACT_PACKAGE_VERSION = $(shell dpkg-parsechangelog | grep Version | cut -d' ' -f 2)
+
+export DPKG_GENSYMBOLS_CHECK_LEVEL = 4
+
+%:
+	dh $@ --parallel --fail-missing --with python3
+
+override_dh_auto_test:
+ifeq ($(DEB_HOST_ARCH_ENDIAN),little)
+	GTEST_OUTPUT=xml:./ dh_auto_test --max-parallel=1 -- ARGS="-V"
+else
+	echo "Testsuite disabled on $(DEB_HOST_ARCH) due to lack of big-endian support."
+endif
+
+COMMON_CONFIGURE_OPTIONS = \
+  -DCMAKE_INSTALL_LIBEXECDIR="lib/$(DEB_HOST_MULTIARCH)/mir"\
+
+ifeq ($(filter noopt,$(DEB_BUILD_OPTIONS)),noopt)
+	COMMON_CONFIGURE_OPTIONS += -DMIR_LINK_TIME_OPTIMIZATION=OFF
+else
+	COMMON_CONFIGURE_OPTIONS += -DMIR_LINK_TIME_OPTIMIZATION=ON
+endif
+
+# Disable LTO on s390x, due to failing to build
+ifeq ($(DEB_HOST_ARCH),s390x)
+	COMMON_CONFIGURE_OPTIONS += -DMIR_LINK_TIME_OPTIMIZATION=OFF
+endif
+
+override_dh_auto_configure:
+ifneq ($(filter armhf arm64,$(DEB_HOST_ARCH)),)
+	dh_auto_configure -- \
+	  $(COMMON_CONFIGURE_OPTIONS) \
+	  -DMIR_PLATFORM=android
+else
+ifneq ($(filter amd64 i386,$(DEB_HOST_ARCH)),)
+	dh_auto_configure -- \
+	  $(COMMON_CONFIGURE_OPTIONS) \
+	  -DMIR_PLATFORM=android
+else
+	dh_auto_configure -- \
+	  $(COMMON_CONFIGURE_OPTIONS) \
+	  -DMIR_PLATFORM=
+endif
+endif
+
+# Only build the docs when we need them
+override_dh_auto_build-indep:
+	dh_auto_build -- doc
+
+override_dh_install:
+# Nothing outside Mir should link to libmirprotobuf directly.
+# Delete the symlink so that --fail-missing doesn't think we've missed it
+# accidentally.
+	dh_install --remaining-packages --fail-missing -Xjquery.js
+

@@ -1,0 +1,94 @@
+Source: mir-android-platform
+Section: x11
+Priority: optional
+Maintainer: Andreas Pokorny <andreas.pokorny@gmail.com>
+XSBC-Original-Maintainer: Andreas Pokorny <andreas.pokorny@gmail.com>
+Build-Depends: cmake,
+               pkg-config,
+               debhelper (>= 9),
+               doxygen,
+               xsltproc,
+               graphviz,
+               libegl1-mesa-dev,
+               libgles2-mesa-dev,
+               libglm-dev,
+               libprotobuf-dev,
+               pkg-config,
+               libgoogle-glog-dev,
+               android-headers-23,
+               libhardware-dev [i386 amd64 armhf arm64],
+               libandroid-properties-dev [i386 amd64 armhf arm64],
+               libgtest-dev,
+               google-mock (>= 1.6.0+svn437),
+# only enable valgrind once it's been tested to work on each architecture:
+               valgrind [amd64 i386 armhf arm64],
+               abi-compliance-checker,
+               python3:any,
+               dh-python,
+               libmircommon-dev,
+               libmirplatform-dev,
+               libmircore-dev,
+               libmirrenderer-dev,
+               mir-renderer-gl-dev,
+               mirtest-dev
+Standards-Version: 3.9.4
+Homepage: https://launchpad.net/mir-android-platform
+# If you aren't a member of ~mir-team but need to upload packaging changes,
+# just go ahead. ~mir-team will notice and sync up the code again.
+Vcs-Git: https://code.launchpad.net/mir-android-platform
+
+Package: mir-android-diagnostics
+Architecture: i386 amd64 armhf arm64
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+Recommends: mir-demos,
+Description: Display Server for Ubuntu - android platform diagnostics utility
+ Mir is a display server running on linux systems, with a focus on efficiency,
+ robust operation and a well-defined driver model.
+ .
+ Contains a tool for checking the graphics components of android devices.
+
+Package: mir-platform-graphics-android13
+Section: libs
+Architecture: i386 amd64 armhf arm64
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+Description: Display server for Ubuntu - platform library for Android
+ Mir is a display server running on linux systems, with a focus on efficiency,
+ robust operation and a well-defined driver model.
+ .
+ Contains the shared libraries required for the Mir server to interact with
+ the hardware platform using the Android drivers.
+
+Package: mir-client-platform-android5
+Section: libs
+Architecture: i386 amd64 armhf arm64
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Description: Display server for Ubuntu - client platform library for Android
+ Mir is a display server running on linux systems, with a focus on efficiency,
+ robust operation and a well-defined driver model.
+ .
+ Contains the shared libraries required for the Mir clients to interact with
+ the underlying hardware platform using the Android drivers.
+
+Package: mir-graphics-drivers-android
+Section: libs
+Architecture: i386 amd64 armhf arm64
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${misc:Depends},
+         mir-platform-graphics-android13,
+         mir-client-platform-android5,
+         mir-platform-input-evdev7,
+Description: Display server for Ubuntu - android driver metapackage
+ Mir is a display server running on linux systems, with a focus on efficiency,
+ robust operation and a well-defined driver model.
+ .
+ This package depends on a full set of graphics drivers for running Mir on top
+ of an existing Android driver stack.

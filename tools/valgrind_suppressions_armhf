@@ -1,0 +1,218 @@
+# ld
+
+{
+    ld_value4
+    Memcheck:Value4
+    obj:/lib/arm-linux-gnueabihf/ld-2.*.so
+}
+
+{
+    ld_cond
+    Memcheck:Cond
+    obj:/lib/arm-linux-gnueabihf/ld-2.*.so
+}
+
+
+{
+    ld_open
+    Memcheck:Param
+    open(filename)
+    obj:/lib/arm-linux-gnueabihf/ld-2.*.so
+}
+
+{
+    ld_getcwd
+    Memcheck:Param
+    getcwd(buf)
+    obj:/lib/arm-linux-gnueabihf/ld-2.*.so
+}
+
+{
+    ld_stat64
+    Memcheck:Param
+    stat64(file_name)
+    obj:/lib/arm-linux-gnueabihf/ld-2.*.so
+}
+
+# Android libs
+
+{
+    android_cond
+    Memcheck:Cond
+    obj:/android/system/*.so
+}
+
+# libc
+
+{
+    libc_freeres_value4
+    Memcheck:Value4
+    ...
+    fun:__libc_freeres
+    ...
+}
+
+{
+    libc_freeres_cond
+    Memcheck:Cond
+    ...
+    fun:__libc_freeres
+    ...
+}
+
+{
+   libc_udivmoddi4_cond
+   Memcheck:Cond
+   fun:__udivmoddi4
+}
+
+{
+   libc_udivmoddi4_value4
+   Memcheck:Value4
+   fun:__udivmoddi4
+}
+
+# It's unfortunate that we need these, since they will
+# suppress errors Addr4 and Value4 from libc regardless
+# of call depth
+{
+   libc_addr4
+   Memcheck:Addr4
+   obj:/lib/arm-linux-gnueabihf/libc-2.*.so
+}
+
+{
+   libc_value4
+   Memcheck:Value4
+   obj:/lib/arm-linux-gnueabihf/libc-2.*.so
+}
+
+# libgcc_s
+
+{
+    libgcc_s_value4
+    Memcheck:Value4
+    ...
+    obj:/lib/arm-linux-gnueabihf/libgcc_s.so.1
+}
+
+{
+    libgcc_s_addr4
+    Memcheck:Addr4
+    ...
+    obj:/lib/arm-linux-gnueabihf/libgcc_s.so.1
+}
+
+{
+    libgcc_s_cond
+    Memcheck:Cond
+    ...
+    obj:/lib/arm-linux-gnueabihf/libgcc_s.so.1
+}
+
+# libdl
+# Valgrind thinks that dlopen returns an uninitialized
+# value, so all dlsym calls cause spurious memory errors
+# since they use that value.
+
+{
+    dlopen_cond
+    Memcheck:Cond
+    ...
+    fun:dlopen@@GLIBC_2.4
+    ...
+}
+
+{
+    dlsym_value4
+    Memcheck:Value4
+    ...
+    fun:dlsym
+    ...
+}
+
+{
+    dlvsym_value4
+    Memcheck:Addr4
+    ...
+    fun:dlvsym
+    ...
+}
+
+{
+    dlsym_cond
+    Memcheck:Cond
+    ...
+    fun:dlsym
+    ...
+}
+
+{
+   dlopen_cond
+   Memcheck:Cond
+   fun:calloc
+   fun:_dl_new_object
+   ...
+}
+
+# mir::SharedLibrary
+# Valgrind thinks that dlopen returns an uninitialized
+# value, so all checks using that value cause spurious
+# memory errors.
+
+{
+   spurious_strlen_addr4
+   Memcheck:Addr4
+   ...
+   fun:dlsym
+   ...
+   fun:_ZN50SharedLibrary_load_nonexistent_function_fails_Test8TestBodyEv
+}
+
+{
+    mir_sharedlibrary_cond
+    Memcheck:Cond
+    fun:_ZN3mir13SharedLibraryC1EPKc
+    ...
+}
+
+# glib is not valgrind-friendly
+
+{
+   glib_create_type_instance
+   Memcheck:Addr4
+   fun:g_type_create_instance
+}
+
+{
+   glib_slice_alloc0
+   Memcheck:Addr4
+   fun:memset
+   fun:g_slice_alloc0
+}
+
+# futex
+
+{
+   futex_utime
+   Memcheck:Param
+   futex(utime)
+   fun:syscall
+   fun:_ZNSt28__atomic_futex_unsigned_base19_M_futex_wait_untilEPjjbNSt6chrono8durationIxSt5ratioILx1ELx1EEEENS2*
+}
+
+{
+   futex_timeout
+   Memcheck:Param
+   futex(timeout)
+   fun:syscall
+   fun:_ZNSt28__atomic_futex_unsigned_base19_M_futex_wait_untilEPjjbNSt6chrono8durationIxSt5ratioILx1ELx1EEEENS2*
+}
+
+# remove_if_stale, false positive due to '-O2' optimization level
+
+{
+   remove_if_stale
+   Memcheck:Cond
+   fun:remove_if_stale
+}
