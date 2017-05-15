@@ -35,8 +35,13 @@
 #include "mir/shared_library.h"
 #include "mir_toolkit/mir_native_buffer.h"
 #include "native_window_report.h"
+
+#include <boost/filesystem.hpp>
+
 #include <system/window.h>
 #include <gtest/gtest.h>
+#include <libgen.h>
+#include <dlfcn.h>
 
 namespace mg=mir::graphics;
 namespace mo=mir::options;
@@ -47,6 +52,42 @@ namespace geom=mir::geometry;
 namespace mtf=mir_test_framework;
 
 static const char probe_platform[] = "probe_graphics_platform";
+
+namespace
+{
+std::string executable_path()
+{
+    char buf[1024];
+    auto tmp = readlink("/proc/self/exe", buf, sizeof buf);
+    if (tmp < 0)
+        BOOST_THROW_EXCEPTION(boost::enable_error_info(
+                                  std::runtime_error("Failed to find our executable path"))
+                              << boost::errinfo_errno(errno));
+    if (tmp > static_cast<ssize_t>(sizeof(buf) - 1))
+        BOOST_THROW_EXCEPTION(std::runtime_error("Path to executable is too long!"));
+    buf[tmp] = '\0';
+    return dirname(buf);
+}
+
+std::string server_platform(std::string const& name)
+{
+    std::string libname{name};
+
+    if (libname.find(".so") == std::string::npos)
+        libname += ".so." MIR_SERVER_GRAPHICS_PLATFORM_ABI_STRING;
+
+    for (auto const& option :
+         {executable_path() + "/../lib/server-modules/", executable_path() + "/../lib/server-platform/", std::string(MIR_SERVER_PLATFORM_PATH) + '/'})
+    {
+        std::cout << option << std::endl;
+        auto path_to_test = option + libname;
+        if (boost::filesystem::exists(path_to_test))
+            return path_to_test;
+    }
+
+    BOOST_THROW_EXCEPTION(std::runtime_error("Failed to find server platform in standard search locations"));
+}
+}
 
 class PlatformBufferIPCPackaging : public ::testing::Test
 {
@@ -266,7 +307,7 @@ TEST(AndroidGraphicsPlatform, probe_returns_unsupported_when_no_hwaccess)
 
     ON_CALL(hwaccess, hw_get_module(_,_)).WillByDefault(Return(-1));
 
-    mir::SharedLibrary platform_lib{mtf::server_platform("graphics-android")};
+    mir::SharedLibrary platform_lib{server_platform("graphics-android")};
     auto probe = platform_lib.load_function<mg::PlatformProbe>(probe_platform);
     EXPECT_EQ(mg::PlatformPriority::unsupported, probe(options));
 }
@@ -276,7 +317,7 @@ TEST(AndroidGraphicsPlatform, probe_returns_best_when_hwaccess_succeeds)
     testing::NiceMock<mtd::HardwareAccessMock> hwaccess;
     mir::options::ProgramOption options;
 
-    mir::SharedLibrary platform_lib{mtf::server_platform("graphics-android")};
+    mir::SharedLibrary platform_lib{server_platform("graphics-android")};
     auto probe = platform_lib.load_function<mg::PlatformProbe>(probe_platform);
     EXPECT_EQ(mg::PlatformPriority::best, probe(options));
 }

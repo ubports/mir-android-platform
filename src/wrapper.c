@@ -66,6 +66,7 @@ int main(int argc, char** argv)
 
     pivot[6] = '\0';  /* truncate lib/client-modules to just lib */
     appendenv("LD_LIBRARY_PATH", path);
+    appendenv("LD_LIBRARY_PATH", MIRCORE_LIBDIR);
     printf("LD_LIBRARY_PATH=%s\n", getenv("LD_LIBRARY_PATH"));
 
     snprintf(pivot, pivot_max, EXECUTABLE_FORMAT, name);

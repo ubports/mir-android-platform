@@ -54,7 +54,6 @@ target_link_libraries(
 
   mirsharedandroid-static
   ${MIRPLATFORM_LDFLAGS}
-  ${MIRCOMMON_LDFLAGS}
   ${MIRCORE_LDFLAGS}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   ${LIBHARDWARE_LIBRARIES}

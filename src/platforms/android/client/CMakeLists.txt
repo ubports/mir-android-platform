@@ -32,7 +32,6 @@ target_link_libraries(mirclientplatformandroid
   client_platform_common
   mirsharedandroid-static
   ${MIRCORE_LDFLAGS}
-  ${MIRCOMMON_LDFLAGS}
   ${MIRPLATFORM_LDFLAGS}
   ${MIRCLIENT_LDFLAGS}
   dl

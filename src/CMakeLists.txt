@@ -11,6 +11,7 @@ set(MIR_CLIENT_PLATFORM_PATH
 add_subdirectory(gl/)
 add_subdirectory(platforms/)
 
+add_definitions(-DMIRCORE_LIBDIR="${MIRCORE_LIBDIR}")
 add_executable(wrapper wrapper.c)
 target_compile_definitions(wrapper PUBLIC
     EXECUTABLE_FORMAT=\"%s.bin\"
