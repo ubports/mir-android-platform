@@ -24,7 +24,7 @@ add_executable(
 
 target_link_libraries(
   mir_android_diagnostics
-  mirserver
+  ${MIRSERVER_LDFLAGS}
   mirdraw
   mir-test-static
   mir-test-framework-static
@@ -36,9 +36,9 @@ mir_add_wrapped_executable(mir_demo_standalone_render_overlays
 )
 
 target_link_libraries(mir_demo_standalone_render_overlays
-  mirclient
-  mircommon
-  mirplatform
+    ${MIRCLIENT_LDFLAGS}
+    ${MIRCOMMON_LDFLAGS}
+    ${MIRPLATFORM_LDFLAGS}
 )
 
 install(PROGRAMS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mir_android_diagnostics

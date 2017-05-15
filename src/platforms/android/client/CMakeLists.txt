@@ -29,10 +29,12 @@ set_target_properties(
 )
 
 target_link_libraries(mirclientplatformandroid
-  mirclient
   client_platform_common
   mirsharedandroid-static
-  mircommon
+  ${MIRCORE_LDFLAGS}
+  ${MIRCOMMON_LDFLAGS}
+  ${MIRPLATFORM_LDFLAGS}
+  ${MIRCLIENT_LDFLAGS}
   dl
   ${LIBHARDWARE_LIBRARIES}
   ${EGL_LDFLAGS} ${EGL_LIBRARIES}

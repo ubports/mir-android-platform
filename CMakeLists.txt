@@ -250,7 +250,6 @@ if (MIR_ENABLE_TESTS)
     COMMAND /bin/sh -c "cd ${PROJECT_SOURCE_DIR} && tools/update_package_abis.sh --check --verbose")
 endif ()
 
-enable_coverage_report(mirserver)
 include (cmake/Doxygen.cmake)
 include (cmake/ABICheck.cmake)
 
