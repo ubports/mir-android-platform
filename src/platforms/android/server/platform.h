@@ -50,7 +50,7 @@ public:
     UniqueModulePtr<graphics::GraphicBufferAllocator> create_buffer_allocator() override;
     UniqueModulePtr<PlatformIpcOperations> make_ipc_operations() const override;
     NativeRenderingPlatform* native_rendering_platform() override;
-    EGLNativeDisplayType egl_native_display() const override;
+    MirServerEGLNativeDisplayType egl_native_display() const override;
 
 private:
     std::shared_ptr<graphics::GraphicBufferAllocator> const buffer_allocator;
