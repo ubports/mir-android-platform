@@ -49,7 +49,7 @@ void mga::FbControl::power_mode(DisplayName display, MirPowerMode mode)
     int enable = 0;
     if (mode == mir_power_mode_on)
         enable = 1;
-    
+
     if (fb_device->enableScreen)
         fb_device->enableScreen(fb_device.get(), enable);
 }
@@ -92,6 +92,7 @@ mg::DisplayConfigurationOutput mga::FbControl::active_config_for(DisplayName dis
         mir_subpixel_arrangement_unknown,
         {},
         mir_output_gamma_unsupported,
+        {},
         {}
     };
 }

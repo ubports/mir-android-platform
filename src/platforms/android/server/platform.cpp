@@ -172,7 +172,7 @@ mir::UniqueModulePtr<mg::GraphicBufferAllocator> mga::GrallocPlatform::create_bu
         {
             return allocator->alloc_software_buffer(size, format);
         }
-    
+
         std::shared_ptr<mg::GraphicBufferAllocator> const allocator;
     };
 
@@ -253,7 +253,7 @@ mir::UniqueModulePtr<mg::Platform> create_host_platform(
 
 namespace
 {
-std::vector<mir::ExtensionDescription> extensions() 
+std::vector<mir::ExtensionDescription> extensions()
 {
     return
     {
@@ -264,43 +264,6 @@ std::vector<mir::ExtensionDescription> extensions()
         { "mir_extension_hardware_buffer_stream", { 1 } }
     };
 }
-}
-
-mir::UniqueModulePtr<mg::Platform> create_guest_platform(
-    std::shared_ptr<mg::DisplayReport> const&,
-    std::shared_ptr<mg::PlatformAuthentication> const&)
-{
-    mir::assert_entry_point_signature<mg::CreateGuestPlatform>(&create_guest_platform);
-    //TODO: actually allow disabling quirks for guest platform
-    auto quirks = std::make_shared<mga::DeviceQuirks>(mga::PropertiesOps{});
-
-    std::shared_ptr<mga::CommandStreamSyncFactory> sync_factory;
-    if (quirks->working_egl_sync())
-        sync_factory = std::make_shared<mga::EGLSyncFactory>();
-    else
-        sync_factory = std::make_shared<mga::NullCommandStreamSyncFactory>();
-
-    auto const buffer_allocator = std::make_shared<mga::GraphicBufferAllocator>(sync_factory, quirks);
-
-    struct GuestDisplayPlatform : mg::DisplayPlatform
-    {
-        mir::UniqueModulePtr<mg::Display> create_display(
-            std::shared_ptr<mg::DisplayConfigurationPolicy> const&,
-            std::shared_ptr<mg::GLConfig> const&) override
-        {
-            BOOST_THROW_EXCEPTION(std::runtime_error("cannot create mga::Display from nested server"));
-        }
-        mg::NativeDisplayPlatform* native_display_platform() override
-        {
-            return nullptr;
-        }
-        std::vector<mir::ExtensionDescription> extensions() const override
-        {
-            return ::extensions();
-        }
-    };
-    return mir::make_module_ptr<mga::Platform>(
-        std::make_shared<GuestDisplayPlatform>(), std::make_shared<mga::GrallocPlatform>(buffer_allocator));
 }
 
 mir::UniqueModulePtr<mir::graphics::DisplayPlatform> create_display_platform(

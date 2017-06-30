@@ -141,7 +141,7 @@ protected:
     testing::NiceMock<mtd::MockEGL> mock_egl;
     mtd::NullGLContext context;
     std::shared_ptr<mga::DeviceQuirks> quirks;
-    MirPixelFormat const format = mir_pixel_format_abgr_8888; 
+    MirPixelFormat const format = mir_pixel_format_abgr_8888;
     geom::Stride const pixel_stride { 300 };
     geom::Stride const byte_stride { 300 * MIR_BYTES_PER_PIXEL(format) };
     unsigned int num_ints, num_fds;
@@ -322,18 +322,18 @@ TEST(AndroidGraphicsPlatform, probe_returns_best_when_hwaccess_succeeds)
     EXPECT_EQ(mg::PlatformPriority::best, probe(options));
 }
 
-TEST(NestedPlatformCreation, doesnt_access_display_hardware)
-{
-    using namespace testing;
-
-    mtd::HardwareAccessMock hwaccess;
-    mtd::MockDisplayReport stub_report;
-    testing::NiceMock<mtd::MockEGL> mock_egl;
-
-    EXPECT_CALL(hwaccess, hw_get_module(StrEq(HWC_HARDWARE_MODULE_ID), _))
-        .Times(0);
-    EXPECT_CALL(hwaccess, hw_get_module(StrEq(GRALLOC_HARDWARE_MODULE_ID), _))
-        .Times(AtMost(1));
-
-    auto platform = create_guest_platform(mt::fake_shared(stub_report), nullptr);
-}
+//TEST(NestedPlatformCreation, doesnt_access_display_hardware)
+//{
+//    using namespace testing;
+//
+//    mtd::HardwareAccessMock hwaccess;
+//    mtd::MockDisplayReport stub_report;
+//    testing::NiceMock<mtd::MockEGL> mock_egl;
+//
+//    EXPECT_CALL(hwaccess, hw_get_module(StrEq(HWC_HARDWARE_MODULE_ID), _))
+//        .Times(0);
+//    EXPECT_CALL(hwaccess, hw_get_module(StrEq(GRALLOC_HARDWARE_MODULE_ID), _))
+//        .Times(AtMost(1));
+//
+//    auto platform = create_guest_platform(mt::fake_shared(stub_report), nullptr);
+//}

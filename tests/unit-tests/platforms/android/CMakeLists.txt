@@ -34,7 +34,6 @@ target_link_libraries(
   mir-test-doubles-platform-static
 
   ${MIRTEST_LDFLAGS}
-  mirprotobuf # TODO maybe this should be in mirtest.pc?
   ${PROTOBUF_LITE_LIBRARIES}
   ${GTEST_BOTH_LIBRARIES}
   ${GMOCK_LIBRARY}
