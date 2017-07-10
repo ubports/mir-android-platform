@@ -321,19 +321,3 @@ TEST(AndroidGraphicsPlatform, probe_returns_best_when_hwaccess_succeeds)
     auto probe = platform_lib.load_function<mg::PlatformProbe>(probe_platform);
     EXPECT_EQ(mg::PlatformPriority::best, probe(options));
 }
-
-//TEST(NestedPlatformCreation, doesnt_access_display_hardware)
-//{
-//    using namespace testing;
-//
-//    mtd::HardwareAccessMock hwaccess;
-//    mtd::MockDisplayReport stub_report;
-//    testing::NiceMock<mtd::MockEGL> mock_egl;
-//
-//    EXPECT_CALL(hwaccess, hw_get_module(StrEq(HWC_HARDWARE_MODULE_ID), _))
-//        .Times(0);
-//    EXPECT_CALL(hwaccess, hw_get_module(StrEq(GRALLOC_HARDWARE_MODULE_ID), _))
-//        .Times(AtMost(1));
-//
-//    auto platform = create_guest_platform(mt::fake_shared(stub_report), nullptr);
-//}
