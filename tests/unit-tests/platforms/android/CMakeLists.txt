@@ -15,6 +15,11 @@ set(
   ANDROID_UNIT_TEST_SOURCES
 )
 
+# disable all implicit fallthrough warnings for GCC > 7.0
+if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
+	add_compile_options(-Wno-implicit-fallthrough)
+endif()
+
 add_subdirectory(server)
 add_subdirectory(client)
 
