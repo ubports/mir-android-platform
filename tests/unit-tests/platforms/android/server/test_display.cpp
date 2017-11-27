@@ -389,36 +389,41 @@ TEST_F(Display, configures_power_modes)
     auto configuration = display.configuration();
     configuration->for_each_output([&](mg::UserDisplayConfigurationOutput& output) {
         //on by default
-        if (output.id == primary_output_id)
-            EXPECT_EQ(output.power_mode, mir_power_mode_on);
+        if (output.id == primary_output_id) {
+          EXPECT_EQ(output.power_mode, mir_power_mode_on);
+        }
         output.power_mode = mir_power_mode_on;
     });
     display.configure(*configuration);
 
     configuration->for_each_output([&](mg::UserDisplayConfigurationOutput& output) {
-        if (output.id == primary_output_id)
-            EXPECT_EQ(output.power_mode, mir_power_mode_on);
+        if (output.id == primary_output_id) {
+          EXPECT_EQ(output.power_mode, mir_power_mode_on);
+        }
         output.power_mode = mir_power_mode_standby;
     });
     display.configure(*configuration);
 
     configuration->for_each_output([&](mg::UserDisplayConfigurationOutput& output) {
-        if (output.id == primary_output_id)
-            EXPECT_EQ(output.power_mode, mir_power_mode_standby);
+        if (output.id == primary_output_id) {
+          EXPECT_EQ(output.power_mode, mir_power_mode_standby);
+        }
         output.power_mode = mir_power_mode_off;
     });
     display.configure(*configuration);
 
     configuration->for_each_output([&](mg::UserDisplayConfigurationOutput& output) {
-        if (output.id == primary_output_id)
-            EXPECT_EQ(output.power_mode, mir_power_mode_off);
+        if (output.id == primary_output_id) {
+          EXPECT_EQ(output.power_mode, mir_power_mode_off);
+        }
         output.power_mode = mir_power_mode_suspend;
     });
     display.configure(*configuration);
 
     configuration->for_each_output([&](mg::UserDisplayConfigurationOutput& output) {
-        if (output.id == primary_output_id)
-            EXPECT_EQ(output.power_mode, mir_power_mode_suspend);
+        if (output.id == primary_output_id) {
+          EXPECT_EQ(output.power_mode, mir_power_mode_suspend);
+        }
     });
 }
 
@@ -585,8 +590,9 @@ TEST_F(Display, display_orientation_not_supported)
 
     config = display.configuration();
     config->for_each_output([](mg::UserDisplayConfigurationOutput const& c){
-        if (c.id == primary_output_id)
-            EXPECT_EQ(mir_orientation_left, c.orientation);
+        if (c.id == primary_output_id) {
+          EXPECT_EQ(mir_orientation_left, c.orientation);
+        }
     });
 }
 
@@ -610,8 +616,9 @@ TEST_F(Display, can_configure_orientation)
 
     config = display.configuration();
     config->for_each_output([&scale](mg::UserDisplayConfigurationOutput const& c){
-        if (c.id == primary_output_id)
-            EXPECT_THAT(c.scale, testing::FloatEq(scale));
+        if (c.id == primary_output_id) {
+          EXPECT_THAT(c.scale, testing::FloatEq(scale));
+        }
     });
 }
 
@@ -634,8 +641,9 @@ TEST_F(Display, can_configure_form_factor)
 
     config = display.configuration();
     config->for_each_output([&form_factor](mg::UserDisplayConfigurationOutput const& c){
-        if (c.id == primary_output_id)
-            EXPECT_THAT(c.form_factor, testing::Eq(form_factor));
+        if (c.id == primary_output_id) {
+          EXPECT_THAT(c.form_factor, testing::Eq(form_factor));
+        }
     });
 }
 
@@ -710,16 +718,18 @@ TEST_F(Display, will_requery_display_configuration_after_hotplug)
 
     auto config = display.configuration();
     config->for_each_output([&](mg::UserDisplayConfigurationOutput const& c){
-        if (c.connected)
-            EXPECT_THAT(c.modes[c.current_mode_index].size, Eq(attribs1.modes[attribs1.current_mode_index].size));
+        if (c.connected) {
+          EXPECT_THAT(c.modes[c.current_mode_index].size, Eq(attribs1.modes[attribs1.current_mode_index].size));
+        }
     });
 
     hotplug_fn();
     config = display.configuration();
     config = display.configuration();
     config->for_each_output([&](mg::UserDisplayConfigurationOutput const& c){
-        if (c.connected)
-            EXPECT_THAT(c.modes[c.current_mode_index].size, Eq(attribs2.modes[attribs2.current_mode_index].size));
+        if (c.connected) {
+          EXPECT_THAT(c.modes[c.current_mode_index].size, Eq(attribs2.modes[attribs2.current_mode_index].size));
+        }
     });
 }
 
