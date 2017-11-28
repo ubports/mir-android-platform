@@ -177,7 +177,7 @@ find_package(Protobuf REQUIRED )
 find_package(CapnProto REQUIRED)
 find_package(GLog REQUIRED)
 find_package(GFlags REQUIRED)
-find_package(LTTngUST REQUIRED)
+#find_package(LTTngUST REQUIRED)
 
 pkg_check_modules(UDEV REQUIRED libudev)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
