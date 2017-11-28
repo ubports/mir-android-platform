@@ -35,7 +35,9 @@ Build-Depends: cmake,
                libcapnp-dev,
                liblttng-ust-dev,
                libudev-dev,
-               libglib2.0-dev
+               libglib2.0-dev,
+               libumockdev-dev (>= 0.6),
+               umockdev (>= 0.8.7)
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/mir-android-platform
 # If you aren't a member of ~mir-team but need to upload packaging changes,
