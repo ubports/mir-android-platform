@@ -31,7 +31,9 @@ Build-Depends: cmake,
                libmircore-dev,
                libmirrenderer-dev,
                mir-renderer-gl-dev,
-               mirtest-dev
+               mirtest-dev,
+               libcapnp-dev,
+               liblttng-ust-dev
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/mir-android-platform
 # If you aren't a member of ~mir-team but need to upload packaging changes,
