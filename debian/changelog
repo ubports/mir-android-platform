@@ -1,5 +1,9 @@
-mir-android-platform (0.28) UNRELEASED; urgency=medium
+mir-android-platform (0.28.0) xenial; urgency=medium
 
-  * Initial release. (Closes: #XXXXXX)
+  [ Andreas Pokorny ]
+  * Initial release.
 
- -- Andreas Pokorny <andreas.pokorny@gmail.com>  Sat, 06 May 2017 09:45:44 +0200
+  [ Marius ]
+  * Xenial release
+
+ -- Marius Gripsgard <marius@ubports.com>  Sat, 06 May 2017 09:45:44 +0200
