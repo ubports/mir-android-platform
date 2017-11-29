@@ -68,7 +68,7 @@ mga::HalComponentFactory::HalComponentFactory(
     }
 
     command_stream_sync_factory = create_command_stream_sync_factory();
-    buffer_allocator = std::make_shared<mga::GraphicBufferAllocator>(
+    buffer_allocator = std::make_shared<mga::BufferAllocator>(
         command_stream_sync_factory, quirks);
 }
 

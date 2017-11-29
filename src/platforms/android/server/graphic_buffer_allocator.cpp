@@ -62,7 +62,7 @@ void null_alloc_dev_deleter(alloc_device_t*)
 
 }
 
-mga::GraphicBufferAllocator::GraphicBufferAllocator(
+mga::BufferAllocator::BufferAllocator(
     std::shared_ptr<CommandStreamSyncFactory> const& cmdstream_sync_factory,
     std::shared_ptr<DeviceQuirks> const& quirks)
     : egl_extensions(std::make_shared<mg::EGLExtensions>()),
@@ -90,7 +90,7 @@ mga::GraphicBufferAllocator::GraphicBufferAllocator(
         alloc_dev_ptr, cmdstream_sync_factory, quirks);
 }
 
-std::shared_ptr<mg::Buffer> mga::GraphicBufferAllocator::alloc_buffer(
+std::shared_ptr<mg::Buffer> mga::BufferAllocator::alloc_buffer(
     mg::BufferProperties const& properties)
 {
     return std::make_shared<Buffer>(
@@ -102,7 +102,7 @@ std::shared_ptr<mg::Buffer> mga::GraphicBufferAllocator::alloc_buffer(
         egl_extensions);
 }
 
-std::shared_ptr<mg::Buffer> mga::GraphicBufferAllocator::alloc_framebuffer(
+std::shared_ptr<mg::Buffer> mga::BufferAllocator::alloc_framebuffer(
     geometry::Size size, MirPixelFormat pf)
 {
     return std::make_shared<Buffer>(
@@ -114,7 +114,7 @@ std::shared_ptr<mg::Buffer> mga::GraphicBufferAllocator::alloc_framebuffer(
         egl_extensions);
 }
 
-std::vector<MirPixelFormat> mga::GraphicBufferAllocator::supported_pixel_formats()
+std::vector<MirPixelFormat> mga::BufferAllocator::supported_pixel_formats()
 {
     static std::vector<MirPixelFormat> const pixel_formats{
         mir_pixel_format_abgr_8888,
@@ -126,7 +126,7 @@ std::vector<MirPixelFormat> mga::GraphicBufferAllocator::supported_pixel_formats
     return pixel_formats;
 }
 
-std::shared_ptr<mg::Buffer> mga::GraphicBufferAllocator::alloc_software_buffer(
+std::shared_ptr<mg::Buffer> mga::BufferAllocator::alloc_software_buffer(
     geometry::Size size, MirPixelFormat format)
 {
     return std::make_shared<Buffer>(
@@ -138,7 +138,7 @@ std::shared_ptr<mg::Buffer> mga::GraphicBufferAllocator::alloc_software_buffer(
         egl_extensions);
 }
 
-std::shared_ptr<mg::Buffer> mga::GraphicBufferAllocator::alloc_buffer(
+std::shared_ptr<mg::Buffer> mga::BufferAllocator::alloc_buffer(
     geometry::Size size, uint32_t native_format, uint32_t native_flags)
 {
     return std::make_shared<Buffer>(
@@ -364,7 +364,7 @@ private:
 };
 }
 
-void mga::GraphicBufferAllocator::bind_display(wl_display* display)
+void mga::BufferAllocator::bind_display(wl_display* display)
 {
     dpy = eglGetCurrentDisplay();
 
@@ -387,7 +387,7 @@ void mga::GraphicBufferAllocator::bind_display(wl_display* display)
     }
 }
 
-std::shared_ptr<mg::Buffer> mga::GraphicBufferAllocator::buffer_from_resource (wl_resource* buffer, std::function<void ()>&& on_consumed)
+std::shared_ptr<mg::Buffer> mga::BufferAllocator::buffer_from_resource (wl_resource* buffer, std::function<void ()>&& on_consumed)
 {
     if (egl_extensions->wayland)
         return WaylandBuffer::mir_buffer_from_wl_buffer(

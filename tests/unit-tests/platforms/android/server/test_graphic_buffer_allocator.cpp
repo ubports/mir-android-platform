@@ -41,11 +41,11 @@ using namespace testing;
 
 namespace
 {
-struct GraphicBufferAllocator : Test
+struct BufferAllocator : Test
 {
     NiceMock<mtd::HardwareAccessMock> hw_access_mock;
     NiceMock<mtd::MockEGL> mock_egl;
-    mga::GraphicBufferAllocator allocator{
+    mga::BufferAllocator allocator{
         std::make_shared<mga::NullCommandStreamSyncFactory>(),
         std::make_shared<mga::DeviceQuirks>(mga::PropertiesOps{})};
     int const fb_usage_flags
@@ -60,16 +60,16 @@ struct GraphicBufferAllocator : Test
 };
 }
 
-TEST_F(GraphicBufferAllocator, allocator_accesses_gralloc_module)
+TEST_F(BufferAllocator, allocator_accesses_gralloc_module)
 {
     EXPECT_CALL(hw_access_mock, hw_get_module(StrEq(GRALLOC_HARDWARE_MODULE_ID), _))
         .Times(1);
 
     auto quirks = std::make_shared<mga::DeviceQuirks>(mga::PropertiesOps{});
-    mga::GraphicBufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
+    mga::BufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
 }
 
-TEST_F(GraphicBufferAllocator, supported_pixel_formats_contain_common_formats)
+TEST_F(BufferAllocator, supported_pixel_formats_contain_common_formats)
 {
     auto supported_pixel_formats = allocator.supported_pixel_formats();
 
@@ -100,7 +100,7 @@ TEST_F(GraphicBufferAllocator, supported_pixel_formats_contain_common_formats)
     EXPECT_EQ(1, rgb_565_count);
 }
 
-TEST_F(GraphicBufferAllocator, supported_pixel_formats_have_sane_default_in_first_position)
+TEST_F(BufferAllocator, supported_pixel_formats_have_sane_default_in_first_position)
 {
     auto supported_pixel_formats = allocator.supported_pixel_formats();
 
@@ -108,46 +108,46 @@ TEST_F(GraphicBufferAllocator, supported_pixel_formats_have_sane_default_in_firs
     EXPECT_EQ(mir_pixel_format_abgr_8888, supported_pixel_formats[0]);
 }
 
-TEST_F(GraphicBufferAllocator, adaptor_gralloc_usage_conversion_fb_gles_with_quirk)
+TEST_F(BufferAllocator, adaptor_gralloc_usage_conversion_fb_gles_with_quirk)
 {
     mtd::MockOption options;
     ON_CALL(options, is_set("fb-ion-heap")).WillByDefault(Return(true));
     ON_CALL(options, get("fb-ion-heap", testing::Matcher<bool>(_))).WillByDefault(Return(false));
     auto quirks = std::make_shared<mga::DeviceQuirks>(mga::PropertiesOps{}, options);
 
-    mga::GraphicBufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
+    mga::BufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
     auto buffer = allocator.alloc_framebuffer({1,1}, mir_pixel_format_abgr_8888);
     auto native = reinterpret_cast<mga::NativeBuffer*>(buffer->native_buffer_handle().get());
     ASSERT_THAT(native, NotNull());
     EXPECT_THAT(native->anwb()->usage, Eq(fb_usage_flags_broken_device));
 }
 
-TEST_F(GraphicBufferAllocator, adaptor_gralloc_usage_conversion_fb_gles_without_quirk)
+TEST_F(BufferAllocator, adaptor_gralloc_usage_conversion_fb_gles_without_quirk)
 {
     auto quirks = std::make_shared<mga::DeviceQuirks>(mga::PropertiesOps{});
-    mga::GraphicBufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
+    mga::BufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
     auto buffer = allocator.alloc_framebuffer({1,1}, mir_pixel_format_abgr_8888);
     auto native = reinterpret_cast<mga::NativeBuffer*>(buffer->native_buffer_handle().get());
     ASSERT_THAT(native, NotNull());
     EXPECT_THAT(native->anwb()->usage, Eq(fb_usage_flags));
 }
 
-TEST_F(GraphicBufferAllocator, adaptor_gralloc_usage_conversion_software)
+TEST_F(BufferAllocator, adaptor_gralloc_usage_conversion_software)
 {
     auto quirks = std::make_shared<mga::DeviceQuirks>(mga::PropertiesOps{});
-    mga::GraphicBufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
+    mga::BufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
     auto buffer = allocator.alloc_software_buffer({1,1}, mir_pixel_format_abgr_8888);
     auto native = reinterpret_cast<mga::NativeBuffer*>(buffer->native_buffer_handle().get());
     ASSERT_THAT(native, NotNull());
     EXPECT_THAT(native->anwb()->usage, Eq(sw_usage_flags));
 }
 
-TEST_F(GraphicBufferAllocator, allocates_native_format_and_native_bits) 
+TEST_F(BufferAllocator, allocates_native_format_and_native_bits)
 {
     auto pf = HAL_PIXEL_FORMAT_RGBA_8888;
     auto usage = GRALLOC_USAGE_RENDERSCRIPT;
     auto quirks = std::make_shared<mga::DeviceQuirks>(mga::PropertiesOps{});
-    mga::GraphicBufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
+    mga::BufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
     auto buffer = allocator.alloc_buffer({1,1}, pf, usage);
     auto native = reinterpret_cast<mga::NativeBuffer*>(buffer->native_buffer_handle().get());
     ASSERT_THAT(native, NotNull());
@@ -155,10 +155,10 @@ TEST_F(GraphicBufferAllocator, allocates_native_format_and_native_bits)
     EXPECT_THAT(native->anwb()->format, Eq(pf));
 }
 
-TEST_F(GraphicBufferAllocator, adaptor_gralloc_usage_conversion_legacy_software)
+TEST_F(BufferAllocator, adaptor_gralloc_usage_conversion_legacy_software)
 {
     auto quirks = std::make_shared<mga::DeviceQuirks>(mga::PropertiesOps{});
-    mga::GraphicBufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
+    mga::BufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
     auto buffer = allocator.alloc_buffer(
         mg::BufferProperties{{1,1}, mir_pixel_format_abgr_8888, mg::BufferUsage::software});
     auto native = reinterpret_cast<mga::NativeBuffer*>(buffer->native_buffer_handle().get());
@@ -167,10 +167,10 @@ TEST_F(GraphicBufferAllocator, adaptor_gralloc_usage_conversion_legacy_software)
     EXPECT_THAT(native->anwb()->format, Eq(HAL_PIXEL_FORMAT_RGBA_8888));
 }
 
-TEST_F(GraphicBufferAllocator, adaptor_gralloc_usage_conversion_legacy_hardware)
+TEST_F(BufferAllocator, adaptor_gralloc_usage_conversion_legacy_hardware)
 {
     auto quirks = std::make_shared<mga::DeviceQuirks>(mga::PropertiesOps{});
-    mga::GraphicBufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
+    mga::BufferAllocator allocator{std::make_shared<mtd::StubCmdStreamSyncFactory>(), quirks};
     auto buffer = allocator.alloc_buffer(
         mg::BufferProperties{{1,1}, mir_pixel_format_abgr_8888, mg::BufferUsage::hardware});
     auto native = reinterpret_cast<mga::NativeBuffer*>(buffer->native_buffer_handle().get());

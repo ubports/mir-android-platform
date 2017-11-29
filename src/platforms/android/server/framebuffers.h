@@ -35,13 +35,13 @@ namespace graphics
 {
 namespace android
 {
-class GraphicBufferAllocator;
+class BufferAllocator;
 
 class Framebuffers : public FramebufferBundle
 {
 public:
     Framebuffers(
-        GraphicBufferAllocator& buffer_allocator,
+        BufferAllocator& buffer_allocator,
         geometry::Size size,
         MirPixelFormat format,
         unsigned int num_framebuffers);

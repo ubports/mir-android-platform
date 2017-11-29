@@ -46,12 +46,12 @@ class Gralloc;
 class DeviceQuirks;
 class CommandStreamSyncFactory;
 
-class GraphicBufferAllocator:
+class BufferAllocator:
   public graphics::GraphicBufferAllocator,
   public graphics::WaylandAllocator
 {
 public:
-    GraphicBufferAllocator(
+    BufferAllocator(
         std::shared_ptr<CommandStreamSyncFactory> const& cmdstream_sync_factory,
         std::shared_ptr<DeviceQuirks> const& quirks);
 

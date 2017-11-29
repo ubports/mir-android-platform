@@ -25,7 +25,7 @@ namespace mga=mir::graphics::android;
 namespace geom=mir::geometry;
 
 mga::Framebuffers::Framebuffers(
-    mga::GraphicBufferAllocator& buffer_allocator,
+    mga::BufferAllocator& buffer_allocator,
     geom::Size size,
     MirPixelFormat format,
     unsigned int num_framebuffers) :

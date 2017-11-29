@@ -42,7 +42,7 @@ struct Framebuffers : Test
 {
     NiceMock<mtd::MockEGL> mock_egl;
     NiceMock<mtd::HardwareAccessMock> hw_access_mock;
-    mga::GraphicBufferAllocator allocator{
+    mga::BufferAllocator allocator{
         std::make_shared<mga::NullCommandStreamSyncFactory>(),
         std::make_shared<mga::DeviceQuirks>(mga::PropertiesOps{})};
     MirPixelFormat format{mir_pixel_format_abgr_8888};
