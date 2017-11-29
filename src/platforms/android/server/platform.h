@@ -32,7 +32,7 @@ namespace graphics
 class DisplayReport;
 namespace android
 {
-class GraphicBufferAllocator;
+class BufferAllocator;
 class FramebufferFactory;
 class DisplayComponentFactory;
 class CommandStreamSyncFactory;
@@ -45,7 +45,7 @@ class GrallocPlatform : public graphics::RenderingPlatform,
 {
 public:
     GrallocPlatform(
-        std::shared_ptr<graphics::GraphicBufferAllocator> const& buffer_allocator);
+        std::shared_ptr<BufferAllocator> const& buffer_allocator);
 
     UniqueModulePtr<graphics::GraphicBufferAllocator> create_buffer_allocator() override;
     UniqueModulePtr<PlatformIpcOperations> make_ipc_operations() const override;
@@ -53,7 +53,7 @@ public:
     MirServerEGLNativeDisplayType egl_native_display() const override;
 
 private:
-    std::shared_ptr<graphics::GraphicBufferAllocator> const buffer_allocator;
+    std::shared_ptr<BufferAllocator> const buffer_allocator;
 };
 
 class HwcPlatform : public graphics::DisplayPlatform

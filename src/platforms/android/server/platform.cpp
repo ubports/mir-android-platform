@@ -136,17 +136,19 @@ std::vector<mir::ExtensionDescription> mga::Platform::extensions() const
 }
 
 mga::GrallocPlatform::GrallocPlatform(
-    std::shared_ptr<mg::GraphicBufferAllocator> const& buffer_allocator) :
+    std::shared_ptr<mga::BufferAllocator> const& buffer_allocator) :
     buffer_allocator(buffer_allocator)
 {
 }
 
 mir::UniqueModulePtr<mg::GraphicBufferAllocator> mga::GrallocPlatform::create_buffer_allocator()
 {
-    struct WrappingGraphicsBufferAllocator : mg::GraphicBufferAllocator
+    struct WrappingGraphicsBufferAllocator :
+      public graphics::GraphicBufferAllocator,
+      public graphics::WaylandAllocator
     {
         WrappingGraphicsBufferAllocator(
-            std::shared_ptr<mg::GraphicBufferAllocator> const& allocator)
+            std::shared_ptr<mga::BufferAllocator> const& allocator)
             : allocator(allocator)
         {
         }
@@ -173,7 +175,18 @@ mir::UniqueModulePtr<mg::GraphicBufferAllocator> mga::GrallocPlatform::create_bu
             return allocator->alloc_software_buffer(size, format);
         }
 
-        std::shared_ptr<mg::GraphicBufferAllocator> const allocator;
+        // Wayland
+        void bind_display(wl_display* display) override
+        {
+          allocator->bind_display(display);
+        }
+
+        std::shared_ptr<Buffer> buffer_from_resource (wl_resource* buffer, std::function<void ()>&& on_consumed) override
+        {
+          return allocator->buffer_from_resource(buffer, std::move(on_consumed));
+        }
+
+        std::shared_ptr<mga::BufferAllocator> const allocator;
     };
 
     return make_module_ptr<WrappingGraphicsBufferAllocator>(buffer_allocator);
@@ -240,7 +253,7 @@ mir::UniqueModulePtr<mg::Platform> create_host_platform(
     auto component_factory = std::make_shared<mga::HalComponentFactory>(
         display_resource_factory, hwc_report, quirks);
 
-    auto allocator = component_factory->the_buffer_allocator();
+    auto allocator = std::dynamic_pointer_cast<mga::BufferAllocator>(component_factory->the_buffer_allocator());
     auto display = std::make_shared<mga::HwcPlatform>(
         allocator,
         component_factory, display_report,
@@ -303,7 +316,7 @@ mir::UniqueModulePtr<mir::graphics::RenderingPlatform> create_rendering_platform
     else
         sync_factory = std::make_shared<mga::NullCommandStreamSyncFactory>();
 
-    auto const buffer_allocator = std::make_shared<mga::GraphicBufferAllocator>(sync_factory, quirks);
+    auto const buffer_allocator = std::make_shared<mga::BufferAllocator>(sync_factory, quirks);
     return mir::make_module_ptr<mga::GrallocPlatform>(buffer_allocator);
 }
 
