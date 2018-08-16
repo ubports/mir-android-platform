@@ -34,7 +34,7 @@ TEST_F(IpcOperations, test_ipc_data_packed_correctly_for_full_ipc)
     //android has no valid operations platform specific operations yet, expect throw
     mg::PlatformOperationMessage message{
         std::vector<uint8_t>{2,4,8,16,32},
-        std::vector<int32_t>{fileno(tmpfile()), fileno(tmpfile())}
+        std::vector<mir::Fd>{mir::Fd(fileno(tmpfile())), mir::Fd(fileno(tmpfile()))}
     };
 
     EXPECT_THROW({
