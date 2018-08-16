@@ -220,3 +220,8 @@ void mga::Buffer::secure_for_render(std::unique_lock<std::mutex> const&)
 {
     native_buffer->lock_for_gpu();
 }
+
+void mga::Buffer::commit()
+{
+    // post rendering step - only necessary when buffer is backed by user memory (c.f. to ShmBuffer)
+}
