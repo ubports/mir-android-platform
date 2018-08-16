@@ -224,11 +224,11 @@ mg::NativeDisplayPlatform* mga::HwcPlatform::native_display_platform()
     return nullptr;
 }
 
-mir::UniqueModulePtr<mg::Platform> create_host_platform(
-    std::shared_ptr<mo::Option> const& options,
-    std::shared_ptr<mir::EmergencyCleanupRegistry> const&,
-    std::shared_ptr<mg::DisplayReport> const& display_report,
-    std::shared_ptr<mir::logging::Logger> const& logger)
+mir::UniqueModulePtr<mg::Platform> create_host_platform(std::shared_ptr<mo::Option> const& options,
+                                                        std::shared_ptr<mir::EmergencyCleanupRegistry> const&,
+                                                        std::shared_ptr<mir::ConsoleServices> const&,
+                                                        std::shared_ptr<mg::DisplayReport> const& display_report,
+                                                        std::shared_ptr<mir::logging::Logger> const& logger)
 {
     mir::assert_entry_point_signature<mg::CreateHostPlatform>(&create_host_platform);
     auto quirks = std::make_shared<mga::DeviceQuirks>(mga::PropertiesOps{}, *options);
@@ -269,6 +269,7 @@ std::vector<mir::ExtensionDescription> extensions()
 mir::UniqueModulePtr<mir::graphics::DisplayPlatform> create_display_platform(
     std::shared_ptr<mir::options::Option> const& options,
     std::shared_ptr<mir::EmergencyCleanupRegistry> const&,
+    std::shared_ptr<mir::ConsoleServices> const&,
     std::shared_ptr<mir::graphics::DisplayReport> const& report,
     std::shared_ptr<mir::logging::Logger> const& logger)
 {
@@ -324,7 +325,8 @@ void add_graphics_platform_options(
     mga::DeviceQuirks::add_options(config);
 }
 
-mg::PlatformPriority probe_graphics_platform(mo::ProgramOption const& /*options*/)
+mg::PlatformPriority probe_graphics_platform(std::shared_ptr<mir::ConsoleServices> const&,
+                                             mo::ProgramOption const& /*options*/)
 {
     mir::assert_entry_point_signature<mg::PlatformProbe>(&probe_graphics_platform);
     int err;

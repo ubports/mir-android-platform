@@ -27,6 +27,7 @@
 #include "mir/test/doubles/null_emergency_cleanup_registry.h"
 #include "mir/test/doubles/stub_display_report.h"
 #include "mir/test/doubles/null_logger.h"
+#include "mir/test/doubles/null_console_services.h"
 #include "mir/options/program_option.h"
 #include "mir/test/doubles/mock_android_hw.h"
 
@@ -50,6 +51,7 @@ public:
       return create_host_platform(
           std::make_shared<mir::options::ProgramOption>(),
           std::make_shared<mtd::NullEmergencyCleanupRegistry>(),
+          std::make_shared<mtd::NullConsoleServices>(),
           std::make_shared<mtd::StubDisplayReport>(),
           logger);
     }

@@ -28,6 +28,7 @@
 #include "mir/test/doubles/mock_android_hw.h"
 #include "mir/test/doubles/mock_display_device.h"
 #include "mir/test/doubles/null_logger.h"
+#include "mir/test/doubles/null_console_services.h"
 #include "mir/test/doubles/stub_display_report.h"
 #include "mir/test/doubles/mock_option.h"
 
@@ -46,6 +47,7 @@ public:
             create_host_platform(
                 std::make_shared<mtd::MockOption>(),
                 std::make_shared<mtd::NullEmergencyCleanupRegistry>(),
+                std::make_shared<mtd::NullConsoleServices>(),
                 std::make_shared<mtd::StubDisplayReport>(),
                 logger)
         }
