@@ -74,7 +74,7 @@ void mga::DisplayBuffer::release_current()
 
 bool mga::DisplayBuffer::overlay(RenderableList const& renderlist)
 {
-    glm::mat2 static const no_transformation;
+    glm::mat2 static const no_transformation(1, 0, 0, 1);
     if (!overlay_enabled ||
         !display_device->compatible_renderlist(renderlist) ||
         transform != no_transformation)

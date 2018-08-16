@@ -40,7 +40,7 @@ struct MockRenderable : public graphics::Renderable
         ON_CALL(*this, alpha())
             .WillByDefault(testing::Return(1.0f));
         ON_CALL(*this, transformation())
-            .WillByDefault(testing::Return(glm::mat4{}));
+            .WillByDefault(testing::Return(glm::mat4{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}));
         ON_CALL(*this, visible())
             .WillByDefault(testing::Return(true));
     }
