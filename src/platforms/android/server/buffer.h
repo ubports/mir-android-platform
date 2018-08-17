@@ -66,6 +66,7 @@ public:
     void secure_for_render() override;
 
     void bind_for_write() override;
+    void commit() override;
 
     //note, you will get the native representation of an android buffer, including
     //the fences associated with the buffer. You must close these fences

@@ -42,13 +42,14 @@ namespace mtd=mir::test::doubles;
 
 namespace
 {
-glm::mat2 const rotate_none;
-glm::mat2 const rotate_left( 0, 1, // transposed
+glm::mat2 const rotate_none(1, 0,
+                            0, 1);
+glm::mat2 const rotate_left(0, 1,  // transposed
                             -1, 0);
-glm::mat2 const rotate_right( 0,-1, // transposed
-                              1, 0);
+glm::mat2 const rotate_right(0, -1,  // transposed
+                             1, 0);
 glm::mat2 const rotate_inverted(-1, 0,
-                                 0,-1);
+                                 0, -1);
 
 struct DisplayBuffer : public ::testing::Test
 {
@@ -82,7 +83,7 @@ struct DisplayBuffer : public ::testing::Test
         new mga::LayerList(std::make_shared<mga::IntegerSourceCrop>(), {}, top_left)};
     std::shared_ptr<mtd::MockFBBundle> mock_fb_bundle{
         std::make_shared<testing::NiceMock<mtd::MockFBBundle>>(display_size)};
-    glm::mat2 const transformation;
+    glm::mat2 const transformation{{1, 0}, {0, 1}};
     mga::DisplayBuffer db{
         mga::DisplayName::primary,
         std::unique_ptr<mga::LayerList>(
@@ -120,7 +121,7 @@ TEST_F(DisplayBuffer, posts_overlay_list_returns_display_device_decision)
 
 TEST_F(DisplayBuffer, defaults_to_no_transformation)
 {
-    EXPECT_EQ(glm::mat2(), db.transformation());
+    EXPECT_EQ(glm::mat2(1.0f,0.0f,0.0f,1.0f), db.transformation());
 }
 
 TEST_F(DisplayBuffer, rotation_transposes_dimensions_and_reports_correctly)
