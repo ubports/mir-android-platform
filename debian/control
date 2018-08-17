@@ -49,7 +49,7 @@ Description: Display Server for Ubuntu - android platform diagnostics utility
  .
  Contains a tool for checking the graphics components of android devices.
 
-Package: mir-platform-graphics-android13
+Package: mir-platform-graphics-android15
 Section: libs
 Architecture: i386 amd64 armhf arm64
 Multi-Arch: same
@@ -83,7 +83,7 @@ Architecture: i386 amd64 armhf arm64
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
-         mir-platform-graphics-android13,
+         mir-platform-graphics-android15,
          mir-client-platform-android5,
          mir-platform-input-evdev7,
 Description: Display server for Ubuntu - android driver metapackage
