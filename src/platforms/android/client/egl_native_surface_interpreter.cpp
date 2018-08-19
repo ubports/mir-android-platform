@@ -34,13 +34,15 @@ mcla::EGLNativeSurfaceInterpreter::EGLNativeSurfaceInterpreter(EGLNativeSurface&
       sync_ops(std::make_shared<mga::RealSyncFileOps>()),
       hardware_bits(GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_RENDER),
       software_bits(GRALLOC_USAGE_SW_WRITE_OFTEN | GRALLOC_USAGE_SW_READ_OFTEN | GRALLOC_USAGE_HW_COMPOSER |
-                    GRALLOC_USAGE_HW_TEXTURE)
+                    GRALLOC_USAGE_HW_TEXTURE),
+      last_buffer_age(0)
 {
 }
 
 mga::NativeBuffer* mcla::EGLNativeSurfaceInterpreter::driver_requests_buffer()
 {
     auto buffer = surface.get_current_buffer();
+    last_buffer_age = buffer->age();
     auto buffer_to_driver = mga::to_native_buffer_checked(buffer->native_buffer_handle());
 
     ANativeWindowBuffer* anwb = buffer_to_driver->anwb();
@@ -100,6 +102,8 @@ int mcla::EGLNativeSurfaceInterpreter::driver_requests_info(int key) const
             return software_bits;
     case NATIVE_WINDOW_DEFAULT_DATASPACE:
         return HAL_DATASPACE_UNKNOWN;
+    case NATIVE_WINDOW_BUFFER_AGE:
+        return last_buffer_age;
     default:
         throw std::runtime_error("driver requested unsupported query");
     }

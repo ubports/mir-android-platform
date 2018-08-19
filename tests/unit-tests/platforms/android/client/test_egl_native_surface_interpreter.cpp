@@ -42,7 +42,7 @@ struct MockMirSurface : public mcl::EGLNativeSurface
 {
     MockMirSurface(MirWindowParameters params)
         : params(params),
-          client_buffer(std::make_shared<mtd::MockClientBuffer>()),
+          client_buffer(std::make_shared<testing::NiceMock<mtd::MockClientBuffer>>()),
           buffer(std::make_shared<mtd::StubAndroidNativeBuffer>())
     {
         using namespace testing;
@@ -292,3 +292,22 @@ TEST_F(AndroidInterpreter, replies_to_dataspace_query)
     mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
     EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_DEFAULT_DATASPACE), Eq(HAL_DATASPACE_UNKNOWN));
 }
+
+TEST_F(AndroidInterpreter, pulls_buffer_age_out_of_last_buffer)
+{
+    using namespace testing;
+    NiceMock<MockMirSurface> mock_surface{surf_params};
+    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    ON_CALL(mock_surface, get_current_buffer()).WillByDefault(Return(mock_surface.client_buffer));
+    EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_BUFFER_AGE), Eq(0));
+
+    EXPECT_CALL(*mock_surface.client_buffer, age()).WillOnce(Return(99));
+    interpreter.driver_requests_buffer();
+    EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_BUFFER_AGE), Eq(99));
+    EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_BUFFER_AGE), Eq(99));
+
+    EXPECT_CALL(*mock_surface.client_buffer, age()).WillOnce(Return(91));
+    interpreter.driver_requests_buffer();
+    EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_BUFFER_AGE), Eq(91));
+}
+
