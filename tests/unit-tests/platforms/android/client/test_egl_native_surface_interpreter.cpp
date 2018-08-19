@@ -284,3 +284,11 @@ TEST_F(AndroidInterpreter, denies_attempt_to_reset_the_buffer_format)
     // we cannot comunicate pixel format changes from surface interpreter
     EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_FORMAT), Eq(android_pixel_format));
 }
+
+TEST_F(AndroidInterpreter, replies_to_dataspace_query)
+{
+    using namespace testing;
+    NiceMock<MockMirSurface> mock_surface{surf_params};
+    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_DEFAULT_DATASPACE), Eq(HAL_DATASPACE_UNKNOWN));
+}
