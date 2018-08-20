@@ -199,3 +199,14 @@ TEST_F(ServerRenderWindow, throws_on_driver_unknown_inquiry)
         render_window.driver_requests_info(NATIVE_WINDOW_CONSUMER_RUNNING_BEHIND);
     }, std::runtime_error);
 }
+
+TEST_F(ServerRenderWindow, reacts_to_buffer_age_query)
+{
+    EXPECT_NO_THROW(render_window.driver_requests_info(NATIVE_WINDOW_BUFFER_AGE));
+}
+
+TEST_F(ServerRenderWindow, reacts_to_queue_duration_queries)
+{
+    EXPECT_NO_THROW(render_window.driver_requests_info(NATIVE_WINDOW_LAST_QUEUE_DURATION));
+    EXPECT_NO_THROW(render_window.driver_requests_info(NATIVE_WINDOW_LAST_DEQUEUE_DURATION));
+}

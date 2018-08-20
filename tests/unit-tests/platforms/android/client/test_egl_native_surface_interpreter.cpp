@@ -16,44 +16,39 @@
  * Authored by: Kevin DuBois <kevin.dubois@canonical.com>
  */
 
+#include "mir/client/client_buffer.h"
+#include "mir/client/egl_native_surface.h"
+#include "mir/test/doubles/mock_client_buffer.h"
+#include "mir/test/doubles/stub_android_native_buffer.h"
+#include "mir/test/fake_shared.h"
 #include "mir_toolkit/mir_native_buffer.h"
 #include "native_buffer.h"
-#include "mir/client/egl_native_surface.h"
-#include "mir/client/client_buffer.h"
-//#include "mir/frontend/client_constants.h"
 #include "src/platforms/android/client/egl_native_surface_interpreter.h"
-#include "mir/test/doubles/stub_android_native_buffer.h"
-#include "mir/test/doubles/mock_client_buffer.h"
-#include "mir/test/fake_shared.h"
-#include <system/window.h>
-#include <hardware/gralloc.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <hardware/gralloc.h>
+#include <system/window.h>
 
-namespace mcl=mir::client;
-namespace mcla=mir::client::android;
-namespace mga=mir::graphics::android;
-namespace geom=mir::geometry;
-namespace mt=mir::test;
-namespace mtd=mir::test::doubles;
+namespace mcl = mir::client;
+namespace mcla = mir::client::android;
+namespace mga = mir::graphics::android;
+namespace geom = mir::geometry;
+namespace mt = mir::test;
+namespace mtd = mir::test::doubles;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 struct MockMirSurface : public mcl::EGLNativeSurface
 {
-    MockMirSurface(MirWindowParameters params) :
-        params(params),
-        client_buffer(std::make_shared<mtd::MockClientBuffer>()),
-        buffer(std::make_shared<mtd::StubAndroidNativeBuffer>())
+    MockMirSurface(MirWindowParameters params)
+        : params(params),
+          client_buffer(std::make_shared<testing::NiceMock<mtd::MockClientBuffer>>()),
+          buffer(std::make_shared<mtd::StubAndroidNativeBuffer>())
     {
         using namespace testing;
-        ON_CALL(*this, get_parameters())
-            .WillByDefault(Return(params));
-        ON_CALL(*client_buffer, native_buffer_handle())
-            .WillByDefault(Return(buffer)); 
-        ON_CALL(*this, get_current_buffer())
-            .WillByDefault(Return(
-                std::make_shared<NiceMock<mtd::MockClientBuffer>>()));
+        ON_CALL(*this, get_parameters()).WillByDefault(Return(params));
+        ON_CALL(*client_buffer, native_buffer_handle()).WillByDefault(Return(buffer));
+        ON_CALL(*this, get_current_buffer()).WillByDefault(Return(std::make_shared<NiceMock<mtd::MockClientBuffer>>()));
     }
 
     MOCK_CONST_METHOD0(get_parameters, MirWindowParameters());
@@ -93,9 +88,7 @@ TEST_F(AndroidInterpreter, gets_buffer_via_the_surface_on_request)
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
     mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
 
-    EXPECT_CALL(mock_surface, get_current_buffer())
-        .Times(1)
-        .WillOnce(Return(mock_client_buffer));
+    EXPECT_CALL(mock_surface, get_current_buffer()).Times(1).WillOnce(Return(mock_client_buffer));
 
     interpreter.driver_requests_buffer();
 }
@@ -108,12 +101,8 @@ TEST_F(AndroidInterpreter, gets_native_handle_from_returned_buffer)
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
     mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
 
-    EXPECT_CALL(*mock_client_buffer, native_buffer_handle())
-        .Times(1)
-        .WillOnce(Return(buffer));
-    EXPECT_CALL(mock_surface, get_current_buffer())
-        .Times(1)
-        .WillOnce(Return(mock_client_buffer));
+    EXPECT_CALL(*mock_client_buffer, native_buffer_handle()).Times(1).WillOnce(Return(buffer));
+    EXPECT_CALL(mock_surface, get_current_buffer()).Times(1).WillOnce(Return(mock_client_buffer));
 
     auto returned_buffer = interpreter.driver_requests_buffer();
     EXPECT_EQ(buffer.get(), returned_buffer);
@@ -127,8 +116,7 @@ TEST_F(AndroidInterpreter, advances_surface_on_buffer_return)
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
     mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
 
-    EXPECT_CALL(mock_surface, swap_buffers_sync())
-        .Times(1);
+    EXPECT_CALL(mock_surface, swap_buffers_sync()).Times(1);
 
     interpreter.driver_returns_buffer(&buffer, -1);
 }
@@ -231,8 +219,8 @@ TEST_F(AndroidInterpreter, requests_swapinterval_change)
     EXPECT_CALL(mock_surface, request_and_wait_for_configure(mir_window_attrib_swapinterval, 0));
 
     mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
-    interpreter.sync_to_display(true); 
-    interpreter.sync_to_display(false); 
+    interpreter.sync_to_display(true);
+    interpreter.sync_to_display(false);
 }
 
 TEST_F(AndroidInterpreter, request_to_set_buffer_count_sets_cache_size)
@@ -241,7 +229,7 @@ TEST_F(AndroidInterpreter, request_to_set_buffer_count_sets_cache_size)
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
     EXPECT_CALL(mock_surface, set_buffer_cache_size(new_size));
     mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
-    interpreter.dispatch_driver_request_buffer_count(new_size); 
+    interpreter.dispatch_driver_request_buffer_count(new_size);
 }
 
 TEST_F(AndroidInterpreter, returns_proper_usage_bits_based_on_surface)
@@ -249,31 +237,77 @@ TEST_F(AndroidInterpreter, returns_proper_usage_bits_based_on_surface)
     using namespace testing;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    MirWindowParameters const software = { "", 1, 2, mir_pixel_format_abgr_8888, mir_buffer_usage_software, 0 };
-    MirWindowParameters const hardware = { "", 1, 2, mir_pixel_format_abgr_8888, mir_buffer_usage_hardware, 0 };
+    MirWindowParameters const software = {"", 1, 2, mir_pixel_format_abgr_8888, mir_buffer_usage_software, 0};
+    MirWindowParameters const hardware = {"", 1, 2, mir_pixel_format_abgr_8888, mir_buffer_usage_hardware, 0};
 #pragma GCC diagnostic pop
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
     mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
 
-    EXPECT_CALL(mock_surface, get_parameters())
-        .Times(2)
-        .WillOnce(Return(software))
-        .WillOnce(Return(hardware));
+    EXPECT_CALL(mock_surface, get_parameters()).Times(2).WillOnce(Return(software)).WillOnce(Return(hardware));
 
     auto const hardware_bits = GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_RENDER;
-    auto const software_bits =
-        GRALLOC_USAGE_SW_WRITE_OFTEN | GRALLOC_USAGE_SW_READ_OFTEN |
-        GRALLOC_USAGE_HW_COMPOSER | GRALLOC_USAGE_HW_TEXTURE;
+    auto const software_bits = GRALLOC_USAGE_SW_WRITE_OFTEN | GRALLOC_USAGE_SW_READ_OFTEN | GRALLOC_USAGE_HW_COMPOSER |
+                               GRALLOC_USAGE_HW_TEXTURE;
     EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_CONSUMER_USAGE_BITS), Eq(software_bits));
     EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_CONSUMER_USAGE_BITS), Eq(hardware_bits));
 }
 
 TEST_F(AndroidInterpreter, request_to_set_buffer_size_ignores_duplicate_sizing_requests)
 {
-    geom::Size new_size { 10, 12 };
+    geom::Size new_size{10, 12};
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
     EXPECT_CALL(mock_surface, set_size(new_size));
     mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
-    interpreter.dispatch_driver_request_buffer_size({surf_params.width, surf_params.height}); 
-    interpreter.dispatch_driver_request_buffer_size(new_size); 
+    interpreter.dispatch_driver_request_buffer_size({surf_params.width, surf_params.height});
+    interpreter.dispatch_driver_request_buffer_size(new_size);
 }
+
+TEST_F(AndroidInterpreter, sets_pixelformat_via_driver_request)
+{
+    using namespace testing;
+    NiceMock<MockMirSurface> mock_surface{surf_params};
+    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    int android_pixel_format = 34;
+    interpreter.dispatch_driver_request_format(android_pixel_format);
+    EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_FORMAT), Eq(android_pixel_format));
+}
+
+TEST_F(AndroidInterpreter, denies_attempt_to_reset_the_buffer_format)
+{
+    using namespace testing;
+    NiceMock<MockMirSurface> mock_surface{surf_params};
+    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    const int android_pixel_format = 13;
+    interpreter.dispatch_driver_request_format(android_pixel_format);
+    const int other_android_pixel_format = 2;
+    interpreter.dispatch_driver_request_format(other_android_pixel_format);
+    // we cannot comunicate pixel format changes from surface interpreter
+    EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_FORMAT), Eq(android_pixel_format));
+}
+
+TEST_F(AndroidInterpreter, replies_to_dataspace_query)
+{
+    using namespace testing;
+    NiceMock<MockMirSurface> mock_surface{surf_params};
+    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_DEFAULT_DATASPACE), Eq(HAL_DATASPACE_UNKNOWN));
+}
+
+TEST_F(AndroidInterpreter, pulls_buffer_age_out_of_last_buffer)
+{
+    using namespace testing;
+    NiceMock<MockMirSurface> mock_surface{surf_params};
+    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    ON_CALL(mock_surface, get_current_buffer()).WillByDefault(Return(mock_surface.client_buffer));
+    EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_BUFFER_AGE), Eq(0));
+
+    EXPECT_CALL(*mock_surface.client_buffer, age()).WillOnce(Return(99));
+    interpreter.driver_requests_buffer();
+    EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_BUFFER_AGE), Eq(99));
+    EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_BUFFER_AGE), Eq(99));
+
+    EXPECT_CALL(*mock_surface.client_buffer, age()).WillOnce(Return(91));
+    interpreter.driver_requests_buffer();
+    EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_BUFFER_AGE), Eq(91));
+}
+

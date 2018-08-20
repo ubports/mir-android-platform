@@ -1,10 +1,3 @@
-include_directories(
-    ${server_common_include_dirs}
-    include/
-)
-
-add_definitions( -DANDROID )
-
 add_library(
   mirsharedandroid-static STATIC
 
@@ -16,3 +9,9 @@ add_library(
   egl_sync_extensions.cpp
   native_window_report.cpp
 )
+target_compile_definitions(mirsharedandroid-static PUBLIC ANDROID)
+target_include_directories(mirsharedandroid-static PUBLIC
+  PUBLIC ${server_common_include_dirs}
+         include/
+         SYSTEM PRIVATE ${ANDROID_HEADERS_INCLUDE_DIRS} # for linux/sync.h
+  )

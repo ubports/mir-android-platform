@@ -11,7 +11,9 @@ fi
 
 packages="\
     mir-client-platform-android:MIR_CLIENT_PLATFORM_ABI \
-    mir-platform-graphics-android:MIR_SERVER_GRAPHICS_PLATFORM_ABI"
+    mir-client-platform-android-caf:MIR_CLIENT_PLATFORM_ABI \
+    mir-platform-graphics-android:MIR_SERVER_GRAPHICS_PLATFORM_ABI \
+    mir-platform-graphics-android-caf:MIR_SERVER_GRAPHICS_PLATFORM_ABI"
 
 package_name()
 {
