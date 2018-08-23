@@ -1,6 +1,3 @@
-# We need MIRPLATFORM_ABI in both libmirplatform and the platform implementations.
-set(MIRPLATFORM_ABI 16)
-
 # We need MIR_CLIENT_PLATFORM_PATH in both libmirclient and the platform
 # implementations
 set(MIR_CLIENT_PLATFORM_PATH

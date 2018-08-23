@@ -6,13 +6,9 @@
 
 INCLUDE(FindPackageHandleStandardArgs)
 
-find_package( PkgConfig )
-pkg_search_module(ANDROID_HEADERS REQUIRED android-headers-23)
-set(LIBHARDWARE_INCLUDE_DIRS ${ANDROID_HEADERS_INCLUDE_DIRS})
-
 find_library(LIBHARDWARE_LIBRARY
    NAMES         libhardware.so.2
-                 libhardware.so 
+                 libhardware.so
 )
 
 set(LIBHARDWARE_LIBRARIES ${LIBHARDWARE_LIBRARY})
@@ -22,6 +18,6 @@ set(LIBHARDWARE_LIBRARIES ${LIBHARDWARE_LIBRARY})
 find_package_handle_standard_args(LIBHARDWARE DEFAULT_MSG
                                   LIBHARDWARE_LIBRARY)
 
-mark_as_advanced(LIBHARDWARE_INCLUDE_DIR LIBHARDWARE_LIBRARY )
+mark_as_advanced(LIBHARDWARE_LIBRARY)
 
 

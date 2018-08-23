@@ -7,14 +7,9 @@ list(
 add_definitions(-DMIR_SERVER_GRAPHICS_PLATFORM_VERSION="${MIR_SERVER_GRAPHICS_PLATFORM_VERSION}")
 
 include_directories(
-  ${PROJECT_SOURCE_DIR}/include/server
-  ${PROJECT_SOURCE_DIR}/include/client
-  ${PROJECT_SOURCE_DIR}/include/platform
   ${PROJECT_SOURCE_DIR}/src/include/common
-  ${PROJECT_SOURCE_DIR}/include/test
   ${PROJECT_SOURCE_DIR}/tests/include
   ${PROJECT_SOURCE_DIR}/src/include/server
-  ${PROJECT_SOURCE_DIR}/examples
   ${PROJECT_SOURCE_DIR}/src/platforms/android/include
 )
 
@@ -31,14 +26,20 @@ target_link_libraries(
   ${LIBHARDWARE_LIBRARIES}
 )
 
+target_include_directories(mir_android_diagnostics SYSTEM PRIVATE
+  ${ANDROID_INCLUDE_DIRS})
+
 mir_add_wrapped_executable(mir_demo_standalone_render_overlays
   render_overlays.cpp
 )
 
+target_include_directories(mir_demo_standalone_render_overlays SYSTEM PRIVATE
+  ${ANDROID_INCLUDE_DIRS})
+
 target_link_libraries(mir_demo_standalone_render_overlays
-    ${MIRCLIENT_LDFLAGS}
-    ${MIRCOMMON_LDFLAGS}
-    ${MIRPLATFORM_LDFLAGS}
+  ${MIRCLIENT_LDFLAGS}
+  ${MIRCOMMON_LDFLAGS}
+  ${MIRPLATFORM_LDFLAGS}
 )
 
 install(PROGRAMS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mir_android_diagnostics

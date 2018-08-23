@@ -9,7 +9,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 set(MIR_VERSION_MAJOR 0)
-set(MIR_VERSION_MINOR 27)
+set(MIR_VERSION_MINOR 32)
 set(MIR_VERSION_PATCH 0)
 
 add_definitions(-DMIR_VERSION_MAJOR=${MIR_VERSION_MAJOR})
@@ -41,8 +41,8 @@ set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "${build_types}" FORCE)
 # Enable cmake-gui to display a drop down list for CMAKE_BUILD_TYPE
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${build_types}")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -g -Werror -Wall -pedantic -Wextra -fPIC")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -g -std=c++14 -Werror -Wall -fno-strict-aliasing -pedantic -Wnon-virtual-dtor -Wextra -fPIC")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -g -Werror -Wall -Wextra -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -g -std=c++14 -Werror -Wall -fno-strict-aliasing -Wnon-virtual-dtor -Wextra -fPIC")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--as-needed")
 set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--as-needed")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--as-needed")
@@ -134,38 +134,34 @@ include_directories (SYSTEM
   ${Boost_INCLUDE_DIRS}
 )
 
-#option(
-#  MIR_DISABLE_EPOLL_REACTOR
-#  "Disable boost::asio's epoll implementation and switch to a select-based reactor to account for ancient kernels on ppa builders."
-#  OFF
-#)
-#if(MIR_DISABLE_EPOLL_REACTOR)
-#add_definitions(
-#  -DBOOST_ASIO_DISABLE_EPOLL -DBOOST_ASIO_DISABLE_KQUEUE -DBOOST_ASIO_DISABLE_DEV_POLL
-#)
-#endif(MIR_DISABLE_EPOLL_REACTOR)
-
-#add_definitions(-DMESA_EGL_NO_X11_HEADERS)
-
 set(
   MIR_PLATFORM
-  android;
+  android;android-caf
   CACHE
   STRING
-  "a list of graphics backends to build (options are 'mesa-kms', 'mesa-x11', or 'eglstream-kms')"
+  "a list of graphics backends to build (options are 'android' or android-caf)"
 )
-
-list(GET MIR_PLATFORM 0 MIR_TEST_PLATFORM)
 
 foreach(platform IN LISTS MIR_PLATFORM)
   if (platform STREQUAL "android")
     set(MIR_BUILD_PLATFORM_ANDROID TRUE)
   endif()
+  if (platform STREQUAL "android-caf")
+     set(MIR_BUILD_PLATFORM_ANDROID_CAF TRUE)
+  endif()
 endforeach(platform)
 
-if (MIR_BUILD_PLATFORM_ANDROID)
+if (MIR_BUILD_PLATFORM_ANDROID OR MIR_BUILD_PLATFORM_ANDROID_CAF)
   find_package(AndroidProperties REQUIRED)
   find_package(LibHardware REQUIRED)
+endif()
+
+if (MIR_BUILD_PLATFORM_ANDROID)
+  pkg_search_module(ANDROID_HEADERS REQUIRED android-headers-24)
+endif()
+
+if (MIR_BUILD_PLATFORM_ANDROID_CAF)
+  pkg_search_module(ANDROID_CAF_HEADERS REQUIRED android-headers-24-caf)
 endif()
 
 option(MIR_ENABLE_TESTS "Build tests" ON)
@@ -229,8 +225,6 @@ set(MIR_GENERATED_INCLUDE_DIRECTORIES)
 add_subdirectory(src/)
 include_directories(${MIR_GENERATED_INCLUDE_DIRECTORIES})
 
-#add_subdirectory(examples/)
-#add_subdirectory(guides/)
 add_subdirectory(cmake/)
 
 if (MIR_ENABLE_TESTS)
