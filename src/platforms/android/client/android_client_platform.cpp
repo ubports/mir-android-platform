@@ -393,7 +393,7 @@ std::shared_ptr<mcl::ClientBufferFactory> mcla::AndroidClientPlatform::create_bu
 void mcla::AndroidClientPlatform::use_egl_native_window(std::shared_ptr<void> native_window, EGLNativeSurface* surface)
 {
     auto anw = std::static_pointer_cast<mga::MirNativeWindow>(native_window);
-    anw->use_native_surface(std::make_shared<mcla::EGLNativeSurfaceInterpreter>(*surface));
+    static_cast<mcla::EGLNativeSurfaceInterpreter&>(anw->interpreter()).set_surface(surface);
 }
 
 std::shared_ptr<void> mcla::AndroidClientPlatform::create_egl_native_window(EGLNativeSurface* surface)
@@ -406,13 +406,10 @@ std::shared_ptr<void> mcla::AndroidClientPlatform::create_egl_native_window(EGLN
     else
         report = std::make_shared<mga::NullNativeWindowReport>();
 
-    std::shared_ptr<mga::AndroidDriverInterpreter> surface_interpreter;
-    if (surface)
-        surface_interpreter = std::make_shared<mcla::EGLNativeSurfaceInterpreter>(*surface);
-    else
-        surface_interpreter = std::make_shared<mcla::ErrorDriverInterpreter>();
-
-    return std::make_shared<mga::MirNativeWindow>(surface_interpreter, report);
+    auto interpreter = std::make_shared<mcla::EGLNativeSurfaceInterpreter>(surface);
+    std::shared_ptr<void> ret = std::make_shared<mga::MirNativeWindow>(interpreter, report);
+    interpreter->set_native_key(ret.get());
+    return ret;
 }
 
 std::shared_ptr<EGLNativeDisplayType>

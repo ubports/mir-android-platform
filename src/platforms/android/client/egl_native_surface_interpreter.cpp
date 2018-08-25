@@ -18,7 +18,9 @@
 
 #include "egl_native_surface_interpreter.h"
 #include "mir/client/client_buffer.h"
+#include "mir/mir_render_surface.h"
 #include "sync_fence.h"
+#include "android_format_conversion-inl.h"
 #include <boost/throw_exception.hpp>
 #include <hardware/gralloc.h>
 #include <stdexcept>
@@ -26,9 +28,10 @@
 #include <system/window.h>
 
 namespace mcla = mir::client::android;
+namespace mcl = mir::client;
 namespace mga = mir::graphics::android;
 
-mcla::EGLNativeSurfaceInterpreter::EGLNativeSurfaceInterpreter(EGLNativeSurface& surface)
+mcla::EGLNativeSurfaceInterpreter::EGLNativeSurfaceInterpreter(EGLNativeSurface* surface)
     : surface(surface),
       driver_pixel_format(-1),
       sync_ops(std::make_shared<mga::RealSyncFileOps>()),
@@ -41,7 +44,8 @@ mcla::EGLNativeSurfaceInterpreter::EGLNativeSurfaceInterpreter(EGLNativeSurface&
 
 mga::NativeBuffer* mcla::EGLNativeSurfaceInterpreter::driver_requests_buffer()
 {
-    auto buffer = surface.get_current_buffer();
+    acquire_surface();
+    auto buffer = surface->get_current_buffer();
     last_buffer_age = buffer->age();
     auto buffer_to_driver = mga::to_native_buffer_checked(buffer->native_buffer_handle());
 
@@ -56,7 +60,7 @@ void mcla::EGLNativeSurfaceInterpreter::driver_returns_buffer(ANativeWindowBuffe
     mga::SyncFence sync_fence(sync_ops, mir::Fd(fence_fd));
     sync_fence.wait();
 
-    surface.swap_buffers_sync();
+    surface->swap_buffers_sync();
 }
 
 void mcla::EGLNativeSurfaceInterpreter::dispatch_driver_request_format(int format)
@@ -83,10 +87,26 @@ int mcla::EGLNativeSurfaceInterpreter::driver_requests_info(int key) const
     {
     case NATIVE_WINDOW_WIDTH:
     case NATIVE_WINDOW_DEFAULT_WIDTH:
-        return surface.get_parameters().width;
+        if (!surface && requested_size.is_set())
+        {
+            return requested_size.value().width.as_int();
+        }
+        else
+        {
+            acquire_surface();
+            return surface->get_parameters().width;
+        }
     case NATIVE_WINDOW_HEIGHT:
     case NATIVE_WINDOW_DEFAULT_HEIGHT:
-        return surface.get_parameters().height;
+        if (!surface && requested_size.is_set())
+        {
+            return requested_size.value().height.as_int();
+        }
+        else
+        {
+            acquire_surface();
+            return surface->get_parameters().height;
+        }
     case NATIVE_WINDOW_FORMAT:
         return driver_pixel_format;
     case NATIVE_WINDOW_TRANSFORM_HINT:
@@ -96,7 +116,7 @@ int mcla::EGLNativeSurfaceInterpreter::driver_requests_info(int key) const
     case NATIVE_WINDOW_CONCRETE_TYPE:
         return NATIVE_WINDOW_SURFACE;
     case NATIVE_WINDOW_CONSUMER_USAGE_BITS:
-        if (surface.get_parameters().buffer_usage == mir_buffer_usage_hardware)
+        if (!surface || surface->get_parameters().buffer_usage == mir_buffer_usage_hardware)
             return hardware_bits;
         else
             return software_bits;
@@ -111,18 +131,60 @@ int mcla::EGLNativeSurfaceInterpreter::driver_requests_info(int key) const
 
 void mcla::EGLNativeSurfaceInterpreter::sync_to_display(bool should_sync)
 {
-    surface.request_and_wait_for_configure(mir_window_attrib_swapinterval, should_sync);
+    if (surface)
+        surface->request_and_wait_for_configure(mir_window_attrib_swapinterval, should_sync);
 }
 
 void mcla::EGLNativeSurfaceInterpreter::dispatch_driver_request_buffer_count(unsigned int count)
 {
-    surface.set_buffer_cache_size(count);
+    if (surface)
+        surface->set_buffer_cache_size(count);
+    else
+        cache_count = count;
 }
 
 void mcla::EGLNativeSurfaceInterpreter::dispatch_driver_request_buffer_size(geometry::Size size)
 {
-    auto params = surface.get_parameters();
-    if (geometry::Size{params.width, params.height} == size)
+    if (surface)
+    {
+        auto params = surface->get_parameters();
+        if (geometry::Size{params.width, params.height} == size)
+            return;
+        surface->set_size(size);
+    }
+    else
+    {
+        requested_size = size;
+    }
+}
+
+void mcla::EGLNativeSurfaceInterpreter::set_surface(EGLNativeSurface* s)
+{
+    surface = s;
+    if (surface)
+    {
+        if (requested_size.is_set())
+            surface->set_size(requested_size.value());
+        if (cache_count.is_set())
+            surface->set_buffer_cache_size(cache_count.value());
+    }
+}
+
+void mcla::EGLNativeSurfaceInterpreter::acquire_surface() const
+{
+    if (surface)
         return;
-    surface.set_size(size);
+
+    if (!native_key)
+        throw std::runtime_error("no id to access MirRenderSurface");
+
+    auto rs = mcl::render_surface_lookup(native_key);
+    if (!rs)
+        throw std::runtime_error("no MirRenderSurface found");
+    auto size = rs->size();
+    // kludge - the side effect of this function will pass the MirNativeSurface into
+    rs->get_buffer_stream(size.width.as_int(), size.height.as_int(), mga::to_mir_format(driver_pixel_format), mir_buffer_usage_hardware);
+
+    if (!surface)
+        throw std::runtime_error("no EGLNativeSurface received from mirclient library");
 }

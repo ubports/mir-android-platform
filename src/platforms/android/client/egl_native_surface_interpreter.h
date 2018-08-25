@@ -21,6 +21,7 @@
 
 #include "android_driver_interpreter.h"
 #include "mir/client/egl_native_surface.h"
+#include "mir/optional_value.h"
 #include <boost/throw_exception.hpp>
 
 namespace mir
@@ -37,27 +38,14 @@ namespace client
 namespace android
 {
 
-class ErrorDriverInterpreter : public graphics::android::AndroidDriverInterpreter
-{
-public:
-#define THROW_EXCEPTION \
-{ \
-    BOOST_THROW_EXCEPTION(std::logic_error("error: use_egl_native_window(...) has not yet been called"));\
-}
-    graphics::android::NativeBuffer* driver_requests_buffer() override THROW_EXCEPTION
-    void driver_returns_buffer(ANativeWindowBuffer*, int) override THROW_EXCEPTION
-    void dispatch_driver_request_format(int) override THROW_EXCEPTION
-    void dispatch_driver_request_buffer_count(unsigned int) override THROW_EXCEPTION
-    void dispatch_driver_request_buffer_size(geometry::Size) override THROW_EXCEPTION
-    int  driver_requests_info(int) const override THROW_EXCEPTION
-    void sync_to_display(bool) override THROW_EXCEPTION
-#undef THROW_EXCEPTION
-};
-
 class EGLNativeSurfaceInterpreter : public graphics::android::AndroidDriverInterpreter
 {
 public:
-    explicit EGLNativeSurfaceInterpreter(EGLNativeSurface& surface);
+    explicit EGLNativeSurfaceInterpreter(EGLNativeSurface* surface = nullptr);
+    // two phase construction
+    void set_native_key(void* rs) { native_key = rs; }
+    void set_surface(EGLNativeSurface* surface);
+
 
     graphics::android::NativeBuffer* driver_requests_buffer() override;
     void driver_returns_buffer(ANativeWindowBuffer*, int fence_fd) override;
@@ -68,14 +56,17 @@ public:
     void sync_to_display(bool) override;
 
 private:
-    EGLNativeSurface& surface;
+    void* native_key{nullptr}; // lookup key to get the MirRenderSurface
+    EGLNativeSurface* surface{nullptr};
+    void acquire_surface() const;
     int driver_pixel_format;
     std::shared_ptr<graphics::android::SyncFileOps> const sync_ops;
     unsigned int const hardware_bits;
     unsigned int const software_bits;
     int last_buffer_age;
+    mir::optional_value<unsigned int> cache_count;
+    mir::optional_value<mir::geometry::Size> requested_size;
 };
-
 }
 }
 }
