@@ -330,8 +330,7 @@ catch (std::exception const& e)
     return -1;
 }
 
-void mga::MirNativeWindow::use_native_surface(
-    std::shared_ptr<AndroidDriverInterpreter> const& interpreter)
+mga::AndroidDriverInterpreter& mga::MirNativeWindow::interpreter()
 {
-    driver_interpreter = interpreter;
+    return *driver_interpreter;
 }
