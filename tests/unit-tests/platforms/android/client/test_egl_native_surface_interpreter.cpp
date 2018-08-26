@@ -86,7 +86,7 @@ TEST_F(AndroidInterpreter, gets_buffer_via_the_surface_on_request)
 {
     using namespace testing;
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
 
     EXPECT_CALL(mock_surface, get_current_buffer()).Times(1).WillOnce(Return(mock_client_buffer));
 
@@ -99,7 +99,7 @@ TEST_F(AndroidInterpreter, gets_native_handle_from_returned_buffer)
     auto buffer = std::make_shared<mtd::StubAndroidNativeBuffer>();
 
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
 
     EXPECT_CALL(*mock_client_buffer, native_buffer_handle()).Times(1).WillOnce(Return(buffer));
     EXPECT_CALL(mock_surface, get_current_buffer()).Times(1).WillOnce(Return(mock_client_buffer));
@@ -114,7 +114,7 @@ TEST_F(AndroidInterpreter, advances_surface_on_buffer_return)
     ANativeWindowBuffer buffer;
 
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
 
     EXPECT_CALL(mock_surface, swap_buffers_sync()).Times(1);
 
@@ -126,7 +126,7 @@ TEST_F(AndroidInterpreter, remembers_format)
 {
     int format = 945;
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
 
     interpreter.dispatch_driver_request_format(format);
     auto tmp_format = interpreter.driver_requests_info(NATIVE_WINDOW_FORMAT);
@@ -137,7 +137,7 @@ TEST_F(AndroidInterpreter, remembers_format)
 TEST_F(AndroidInterpreter, returns_no_transform_for_transform_hint_query)
 {
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
     /* transform hint is a bitmask of a few options for rotation/flipping buffer. a value
        of zero is no transform */
     int transform_hint_zero = 0;
@@ -149,7 +149,7 @@ TEST_F(AndroidInterpreter, returns_no_transform_for_transform_hint_query)
 TEST_F(AndroidInterpreter, returns_width_as_default_width)
 {
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
 
     auto default_width = interpreter.driver_requests_info(NATIVE_WINDOW_DEFAULT_WIDTH);
 
@@ -159,7 +159,7 @@ TEST_F(AndroidInterpreter, returns_width_as_default_width)
 TEST_F(AndroidInterpreter, returns_height_as_default_height)
 {
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
 
     auto default_height = interpreter.driver_requests_info(NATIVE_WINDOW_DEFAULT_HEIGHT);
 
@@ -169,7 +169,7 @@ TEST_F(AndroidInterpreter, returns_height_as_default_height)
 TEST_F(AndroidInterpreter, returns_surface_as_concrete_type)
 {
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
 
     auto concrete_type = interpreter.driver_requests_info(NATIVE_WINDOW_CONCRETE_TYPE);
     EXPECT_EQ(NATIVE_WINDOW_SURFACE, concrete_type);
@@ -178,7 +178,7 @@ TEST_F(AndroidInterpreter, returns_surface_as_concrete_type)
 TEST_F(AndroidInterpreter, returns_width)
 {
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
 
     auto width = interpreter.driver_requests_info(NATIVE_WINDOW_WIDTH);
 
@@ -188,7 +188,7 @@ TEST_F(AndroidInterpreter, returns_width)
 TEST_F(AndroidInterpreter, returns_height)
 {
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
 
     auto height = interpreter.driver_requests_info(NATIVE_WINDOW_HEIGHT);
 
@@ -205,7 +205,7 @@ TEST_F(AndroidInterpreter, returns_height)
 TEST_F(AndroidInterpreter, returns_2_for_min_undequeued_query)
 {
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
 
     auto num_buffers = interpreter.driver_requests_info(NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS);
     EXPECT_EQ(2, num_buffers);
@@ -218,7 +218,7 @@ TEST_F(AndroidInterpreter, requests_swapinterval_change)
     EXPECT_CALL(mock_surface, request_and_wait_for_configure(mir_window_attrib_swapinterval, 1));
     EXPECT_CALL(mock_surface, request_and_wait_for_configure(mir_window_attrib_swapinterval, 0));
 
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
     interpreter.sync_to_display(true);
     interpreter.sync_to_display(false);
 }
@@ -228,7 +228,7 @@ TEST_F(AndroidInterpreter, request_to_set_buffer_count_sets_cache_size)
     int new_size = 5;
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
     EXPECT_CALL(mock_surface, set_buffer_cache_size(new_size));
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
     interpreter.dispatch_driver_request_buffer_count(new_size);
 }
 
@@ -241,7 +241,7 @@ TEST_F(AndroidInterpreter, returns_proper_usage_bits_based_on_surface)
     MirWindowParameters const hardware = {"", 1, 2, mir_pixel_format_abgr_8888, mir_buffer_usage_hardware, 0};
 #pragma GCC diagnostic pop
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
 
     EXPECT_CALL(mock_surface, get_parameters()).Times(2).WillOnce(Return(software)).WillOnce(Return(hardware));
 
@@ -257,7 +257,7 @@ TEST_F(AndroidInterpreter, request_to_set_buffer_size_ignores_duplicate_sizing_r
     geom::Size new_size{10, 12};
     testing::NiceMock<MockMirSurface> mock_surface{surf_params};
     EXPECT_CALL(mock_surface, set_size(new_size));
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
     interpreter.dispatch_driver_request_buffer_size({surf_params.width, surf_params.height});
     interpreter.dispatch_driver_request_buffer_size(new_size);
 }
@@ -266,7 +266,7 @@ TEST_F(AndroidInterpreter, sets_pixelformat_via_driver_request)
 {
     using namespace testing;
     NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
     int android_pixel_format = 34;
     interpreter.dispatch_driver_request_format(android_pixel_format);
     EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_FORMAT), Eq(android_pixel_format));
@@ -276,7 +276,7 @@ TEST_F(AndroidInterpreter, denies_attempt_to_reset_the_buffer_format)
 {
     using namespace testing;
     NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
     const int android_pixel_format = 13;
     interpreter.dispatch_driver_request_format(android_pixel_format);
     const int other_android_pixel_format = 2;
@@ -289,7 +289,7 @@ TEST_F(AndroidInterpreter, replies_to_dataspace_query)
 {
     using namespace testing;
     NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
     EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_DEFAULT_DATASPACE), Eq(HAL_DATASPACE_UNKNOWN));
 }
 
@@ -297,7 +297,7 @@ TEST_F(AndroidInterpreter, pulls_buffer_age_out_of_last_buffer)
 {
     using namespace testing;
     NiceMock<MockMirSurface> mock_surface{surf_params};
-    mcla::EGLNativeSurfaceInterpreter interpreter(mock_surface);
+    mcla::EGLNativeSurfaceInterpreter interpreter(&mock_surface);
     ON_CALL(mock_surface, get_current_buffer()).WillByDefault(Return(mock_surface.client_buffer));
     EXPECT_THAT(interpreter.driver_requests_info(NATIVE_WINDOW_BUFFER_AGE), Eq(0));
 
