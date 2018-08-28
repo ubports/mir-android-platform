@@ -1,3 +1,10 @@
+mir-android-platform (0.31.2) xenial; urgency=medium
+
+  [Andreas Pokorny]
+  * Adjust to MirRenderSurface changes in upstream mir 
+
+ -- Marius Gripsgard <marius@ubports.com>  Tue, 28 Aug 2018 10:50:23 +0200
+
 mir-android-platform (0.28) UNRELEASED; urgency=medium
 
   * Initial release. (Closes: #XXXXXX)
