@@ -67,7 +67,7 @@ if (MIR_BUILD_PLATFORM_ANDROID_CAF)
  
   set_target_properties(
     mirclientplatformandroidcaf PROPERTIES
-    OUTPUT_NAME android
+    OUTPUT_NAME android-caf
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/client-modules
     PREFIX ""
     SUFFIX ".so.${MIR_CLIENT_PLATFORM_ABI}"
