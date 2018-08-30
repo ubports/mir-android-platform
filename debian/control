@@ -31,14 +31,20 @@ Build-Depends: cmake,
                libmircore-dev,
                libmirrenderer-dev,
                mir-renderer-gl-dev,
-               mirtest-dev
+               mirtest-dev,
+               libcapnp-dev,
+               liblttng-ust-dev,
+               libudev-dev,
+               libglib2.0-dev,
+               libumockdev-dev (>= 0.6),
+               umockdev (>= 0.8.7)
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/mir-android-platform
 # If you aren't a member of ~mir-team but need to upload packaging changes,
 # just go ahead. ~mir-team will notice and sync up the code again.
 Vcs-Git: https://code.launchpad.net/mir-android-platform
 
-Package: mir-android-diagnostics
+Package: mir-android-tests
 Architecture: i386 amd64 armhf arm64
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
@@ -48,7 +54,7 @@ Description: Display Server for Ubuntu - android platform diagnostics utility
  Mir is a display server running on linux systems, with a focus on efficiency,
  robust operation and a well-defined driver model.
  .
- Contains a tool for checking the graphics components of android devices.
+ Contains unit tests
 
 Package: mir-platform-graphics-android15
 Section: libs
