@@ -159,7 +159,8 @@ public:
         EGLDisplay dpy,
         wl_resource* buffer,
         std::shared_ptr<mg::EGLExtensions> const& extensions,
-        std::function<void()>&& on_consumed)
+        std::function<void()>&& on_consumed,
+        std::function<void()>&& on_release)
     {
         std::shared_ptr<WaylandBuffer> mir_buffer;
         DestructionShim* shim;
@@ -182,7 +183,8 @@ public:
                         dpy,
                         buffer,
                         extensions,
-                        std::move(on_consumed)}};
+                        std::move(on_consumed),
+                        std::move(on_release)}};
                 shim->associated_buffer = mir_buffer;
             }
         }
@@ -193,7 +195,8 @@ public:
                     dpy,
                     buffer,
                     extensions,
-                    std::move(on_consumed)}};
+                    std::move(on_consumed),
+                    std::move(on_release)}};
             shim = new DestructionShim;
             shim->destruction_listener.notify = &on_buffer_destroyed;
             shim->associated_buffer = mir_buffer;
@@ -213,7 +216,7 @@ public:
         std::lock_guard<std::mutex> lock{*buffer_mutex};
         if (buffer)
         {
-            wl_resource_queue_event(buffer, WL_BUFFER_RELEASE);
+            on_release();
         }
     }
 
@@ -244,8 +247,6 @@ public:
 
             if (egl_image == EGL_NO_IMAGE_KHR)
                 BOOST_THROW_EXCEPTION(mg::egl_error("Failed to create EGLImage"));
-
-            on_consumed();
         }
         lock.unlock();
 
@@ -259,6 +260,7 @@ public:
 
     void secure_for_render() override
     {
+        on_consumed();
     }
 
     std::shared_ptr<mir::graphics::NativeBuffer> native_buffer_handle() const override
@@ -286,12 +288,14 @@ private:
         EGLDisplay dpy,
         wl_resource* buffer,
         std::shared_ptr<mg::EGLExtensions> const& extensions,
-        std::function<void()>&& on_consumed)
+        std::function<void()>&& on_consumed,
+        std::function<void()>&& on_release)
         : buffer{buffer},
         dpy{dpy},
         egl_image{EGL_NO_IMAGE_KHR},
         extensions{extensions},
-        on_consumed{std::move(on_consumed)}
+        on_consumed{std::move(on_consumed)},
+        on_release{std::move(on_release)}
     {
         if (extensions->wayland->eglQueryWaylandBufferWL(dpy, buffer, EGL_WIDTH, &width) == EGL_FALSE)
         {
@@ -360,7 +364,8 @@ private:
 
     std::shared_ptr<mg::EGLExtensions> const extensions;
 
-    std::function<void()> on_consumed;
+    std::function<void()> const on_consumed;
+    std::function<void()> const on_release;
 };
 }
 
@@ -379,7 +384,7 @@ void mga::GraphicBufferAllocator::bind_display(wl_display* display)
 
     if (egl_extensions->wayland->eglBindWaylandDisplayWL(dpy, display) == EGL_FALSE)
     {
-        BOOST_THROW_EXCEPTION(mg::egl_error("Failed to bind Wayland display"));
+        BOOST_THROW_EXCEPTION(mg::egl_error("Failed to bind Wayland EGL display"));
     }
     else
     {
@@ -387,13 +392,17 @@ void mga::GraphicBufferAllocator::bind_display(wl_display* display)
     }
 }
 
-std::shared_ptr<mg::Buffer> mga::GraphicBufferAllocator::buffer_from_resource (wl_resource* buffer, std::function<void ()>&& on_consumed)
+std::shared_ptr<mg::Buffer> mga::GraphicBufferAllocator::buffer_from_resource(
+    wl_resource* buffer,
+    std::function<void()>&& on_consumed,
+    std::function<void()>&& on_release)
 {
     if (egl_extensions->wayland)
         return WaylandBuffer::mir_buffer_from_wl_buffer(
             dpy,
             buffer,
             egl_extensions,
-            std::move(on_consumed));
+            std::move(on_consumed),
+            std::move(on_release));
     return nullptr;
 }
