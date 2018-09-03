@@ -67,7 +67,10 @@ public:
 
     // WaylandAllocator
     void bind_display(wl_display* display) override;
-    std::shared_ptr<Buffer> buffer_from_resource (wl_resource* buffer, std::function<void ()>&& on_consumed) override;
+    std::shared_ptr<Buffer> buffer_from_resource(
+        wl_resource* buffer,
+        std::function<void()>&& on_consumed,
+        std::function<void()>&& on_release) override;
 private:
     const hw_module_t    *hw_module;
     std::shared_ptr<Gralloc> alloc_device;
