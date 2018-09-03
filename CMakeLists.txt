@@ -182,6 +182,7 @@ pkg_check_modules(MIRCORE REQUIRED mircore)
 pkg_check_modules(MIRPLATFORM REQUIRED mirplatform)
 pkg_check_modules(MIRGLRENDERER REQUIRED mir-renderer-gl-dev)
 pkg_check_modules(MIRRENDERER REQUIRED mirrenderer)
+pkg_check_modules(WAYLAND_SERVER REQUIRED wayland-server)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
