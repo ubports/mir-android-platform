@@ -174,6 +174,17 @@ mir::UniqueModulePtr<mg::GraphicBufferAllocator> mga::GrallocPlatform::create_bu
             return allocator->alloc_software_buffer(size, format);
         }
 
+        // Wayland
+        void bind_display(wl_display* display) override
+        {
+          allocator->bind_display(display);
+        }
+
+        std::shared_ptr<Buffer> buffer_from_resource (wl_resource* buffer, std::function<void ()>&& on_consumed) override
+        {
+          return allocator->buffer_from_resource(buffer, std::move(on_consumed));
+        }
+
         std::shared_ptr<mg::GraphicBufferAllocator> const allocator;
     };
 
