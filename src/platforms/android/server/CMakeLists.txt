@@ -43,6 +43,7 @@ if (MIR_BUILD_PLATFORM_ANDROID)
       ${GLESv2_INCLUDE_DIRS}
       ${ANDROID_PROPERTIES_INCLUDE_DIRS}
       ${ANDROID_HEADERS_INCLUDE_DIRS}
+      ${WAYLAND_SERVER_INCLUDE_DIRS}
   )
 
   target_compile_options(mirplatformgraphicsandroidobjects PRIVATE -fpermissive)
@@ -63,6 +64,7 @@ if (MIR_BUILD_PLATFORM_ANDROID)
     ${EGL_LDFLAGS} ${EGL_LIBRARIES}
     ${GLESv2_LDFLAGS} ${GLESv2_LIBRARIES}
     ${ANDROID_PROPERTIES_LDFLAGS}
+    ${WAYLAND_SERVER_LDFLAGS} ${WAYLAND_SERVER_LIBRARIES}
   )
 
   set_target_properties(
@@ -113,11 +115,12 @@ if (MIR_BUILD_PLATFORM_ANDROID_CAF)
       ${PROJECT_SOURCE_DIR}/src/include/gl
   )
 
-  target_include_directories(mirplatformgraphicsandroidcafobjects SYSTEM PRIVATE 
+  target_include_directories(mirplatformgraphicsandroidcafobjects SYSTEM PRIVATE
       ${EGL_INCLUDE_DIRS}
       ${GLESv2_INCLUDE_DIRS}
       ${ANDROID_CAF_HEADERS_INCLUDE_DIRS}
       ${ANDROID_PROPERTIES_INCLUDE_DIRS}
+      ${WAYLAND_SERVER_INCLUDE_DIRS}
   )
 
   target_compile_options(mirplatformgraphicsandroidcafobjects PRIVATE -fpermissive)
@@ -139,6 +142,7 @@ if (MIR_BUILD_PLATFORM_ANDROID_CAF)
     ${EGL_LDFLAGS} ${EGL_LIBRARIES}
     ${GLESv2_LDFLAGS} ${GLESv2_LIBRARIES}
     ${ANDROID_PROPERTIES_LDFLAGS}
+    ${WAYLAND_SERVER_LDFLAGS} ${WAYLAND_SERVER_LIBRARIES}
   )
 
   set_target_properties(
