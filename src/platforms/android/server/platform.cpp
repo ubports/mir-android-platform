@@ -44,9 +44,9 @@
 #include <mutex>
 #include <string.h>
 
-namespace mg=mir::graphics;
-namespace mga=mir::graphics::android;
-namespace mf=mir::frontend;
+namespace mg = mir::graphics;
+namespace mga = mir::graphics::android;
+namespace mf = mir::frontend;
 namespace mo = mir::options;
 
 namespace
@@ -56,6 +56,21 @@ char const* const hwc_overlay_opt = "disable-overlays";
 char const* const log_opt_value = "log";
 char const* const off_opt_value = "off";
 char const* const fb_native_window_report_opt = "report-fb-native-window";
+
+#ifdef ANDROID_CAF
+std::tuple<int, int, int> get_android_version()
+{
+    char value[PROP_VALUE_MAX] = "";
+    char const key[] = "ro.build.version.release";
+    ::property_get(key, value, "4.1.1");
+
+    std::tuple<int, int, int> ret{0, 0, 0};
+    if (scanf("%d.%d.%d", &std::get<0>(ret), &std::get<1>(ret), &std::get<2>(ret)) == 3)
+        return ret;
+    else
+        return std::make_tuple(4, 1, 1);
+}
+#endif
 
 std::shared_ptr<mga::HwcReport> make_hwc_report(mo::Option const& options)
 {
@@ -94,7 +109,7 @@ mga::OverlayOptimization should_use_overlay_optimization(mo::Option const& optio
     else
         return mga::OverlayOptimization::enabled;
 }
-}
+}  // namespace
 
 mga::Platform::Platform(
     std::shared_ptr<DisplayPlatform> const& display,
@@ -338,8 +353,9 @@ mg::PlatformPriority probe_graphics_platform(std::shared_ptr<mir::ConsoleService
 
 #ifdef ANDROID_CAF
     // LAZY HACK to check for qcom hardware
-    if (strcmp(hw_module->author, "CodeAurora Forum") == 0)
-      return static_cast<mg::PlatformPriority>(mg::PlatformPriority::best + 1);
+    auto version = get_android_version();
+    if (strcmp(hw_module->author, "CodeAurora Forum") == 0 && std::get<0>(version) >= 7)
+        return static_cast<mg::PlatformPriority>(mg::PlatformPriority::best + 1);
     return mg::PlatformPriority::unsupported;
 #else
     return mg::PlatformPriority::best;
@@ -359,7 +375,7 @@ mir::ModuleProperties const description = {
     MIR_VERSION_MICRO,
     mir::libname()
 };
-}
+}  // namespace
 
 mir::ModuleProperties const* describe_graphics_module()
 {
