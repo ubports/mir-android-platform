@@ -337,7 +337,7 @@ mg::NativeDisplay* mga::Display::native_display()
     return this;
 }
 
-std::unique_ptr<mir::renderer::gl::Context> mga::Display::create_gl_context()
+std::unique_ptr<mir::renderer::gl::Context> mga::Display::create_gl_context() const
 {
     return std::make_unique<mga::PbufferGLContext>(gl_context);
 }
