@@ -47,7 +47,7 @@ public:
     GrallocPlatform(
         std::shared_ptr<graphics::GraphicBufferAllocator> const& buffer_allocator);
 
-    UniqueModulePtr<graphics::GraphicBufferAllocator> create_buffer_allocator() override;
+    UniqueModulePtr<graphics::GraphicBufferAllocator> create_buffer_allocator(graphics::Display const& output) override;
     UniqueModulePtr<PlatformIpcOperations> make_ipc_operations() const override;
     NativeRenderingPlatform* native_rendering_platform() override;
     MirServerEGLNativeDisplayType egl_native_display() const override;
@@ -89,7 +89,7 @@ public:
         std::shared_ptr<DisplayPlatform> const& display,
         std::shared_ptr<GrallocPlatform> const& rendering);
 
-    UniqueModulePtr<graphics::GraphicBufferAllocator> create_buffer_allocator() override;
+    UniqueModulePtr<graphics::GraphicBufferAllocator> create_buffer_allocator(graphics::Display const& output) override;
     UniqueModulePtr<Display> create_display(
         std::shared_ptr<graphics::DisplayConfigurationPolicy> const&,
         std::shared_ptr<graphics::GLConfig> const& /*gl_config*/) override;
