@@ -104,9 +104,9 @@ mga::Platform::Platform(
 {
 }
 
-mir::UniqueModulePtr<mg::GraphicBufferAllocator> mga::Platform::create_buffer_allocator()
+mir::UniqueModulePtr<mg::GraphicBufferAllocator> mga::Platform::create_buffer_allocator(mg::Display const& output)
 {
-    return rendering->create_buffer_allocator();
+    return rendering->create_buffer_allocator(output);
 }
 
 mir::UniqueModulePtr<mg::Display> mga::Platform::create_display(
@@ -142,7 +142,7 @@ mga::GrallocPlatform::GrallocPlatform(
 {
 }
 
-mir::UniqueModulePtr<mg::GraphicBufferAllocator> mga::GrallocPlatform::create_buffer_allocator()
+mir::UniqueModulePtr<mg::GraphicBufferAllocator> mga::GrallocPlatform::create_buffer_allocator(mg::Display const& /*output*/)
 {
     struct WrappingGraphicsBufferAllocator : mg::GraphicBufferAllocator
     {
