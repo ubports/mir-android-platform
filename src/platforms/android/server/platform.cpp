@@ -142,7 +142,7 @@ mga::GrallocPlatform::GrallocPlatform(
 {
 }
 
-mir::UniqueModulePtr<mg::GraphicBufferAllocator> mga::GrallocPlatform::create_buffer_allocator(mg::Display const& /*output*/)
+mir::UniqueModulePtr<mg::GraphicBufferAllocator> mga::GrallocPlatform::create_buffer_allocator(mg::Display const& output)
 {
     struct WrappingGraphicsBufferAllocator : mg::GraphicBufferAllocator,
                                              mg::WaylandAllocator
@@ -177,9 +177,9 @@ mir::UniqueModulePtr<mg::GraphicBufferAllocator> mga::GrallocPlatform::create_bu
         }
 
         // Wayland
-        void bind_display(wl_display* display) override
+        void bind_display(wl_display* display, std::shared_ptr<Executor> wayland_executor) override
         {
-          wl_allocator->bind_display(display);
+          wl_allocator->bind_display(display, std::move(wayland_executor));
         }
 
         std::shared_ptr<Buffer> buffer_from_resource(
@@ -195,6 +195,8 @@ mir::UniqueModulePtr<mg::GraphicBufferAllocator> mga::GrallocPlatform::create_bu
         std::shared_ptr<mg::GraphicBufferAllocator> const allocator;
         std::shared_ptr<mg::WaylandAllocator> const wl_allocator;
     };
+    auto allocator = std::dynamic_pointer_cast<mga::GraphicBufferAllocator>(buffer_allocator);
+    allocator->set_ctx(output);
 
     return make_module_ptr<WrappingGraphicsBufferAllocator>(buffer_allocator);
 }
