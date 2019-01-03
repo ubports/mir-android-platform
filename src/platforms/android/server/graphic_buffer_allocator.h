@@ -34,9 +34,17 @@
 
 namespace mir
 {
+namespace renderer
+{
+namespace gl
+{
+class Context;
+}
+}
 namespace graphics
 {
 
+class Display;
 class EGLExtensions;
 
 namespace android
@@ -66,11 +74,12 @@ public:
     std::vector<MirPixelFormat> supported_pixel_formats() override;
 
     // WaylandAllocator
-    void bind_display(wl_display* display) override;
+    void bind_display(wl_display* display, std::shared_ptr<Executor> wayland_executor) override;
     std::shared_ptr<Buffer> buffer_from_resource(
         wl_resource* buffer,
         std::function<void()>&& on_consumed,
         std::function<void()>&& on_release) override;
+    void set_ctx(graphics::Display const& output);
 private:
     const hw_module_t    *hw_module;
     std::shared_ptr<Gralloc> alloc_device;
@@ -78,8 +87,9 @@ private:
     std::shared_ptr<CommandStreamSyncFactory> const cmdstream_sync_factory;
     std::shared_ptr<DeviceQuirks> const quirks;
 
-    // WaylandAllocator
-    EGLDisplay dpy;
+    // WaylandTexBuffer
+    std::shared_ptr<renderer::gl::Context> ctx;
+    std::shared_ptr<Executor> wayland_executor;
 };
 
 }
