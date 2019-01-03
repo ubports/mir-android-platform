@@ -41,7 +41,7 @@ decltype(hwc_layer_1_t::planeAlpha) static const plane_alpha_max{
 void mga::FloatSourceCrop::fill_source_crop(
     hwc_layer_1_t& hwc_layer, geometry::Rectangle const& crop_rect) const
 {
-    hwc_layer.sourceCropf = 
+    hwc_layer.sourceCropf =
     {
         static_cast<float>(crop_rect.top_left.x.as_int()),
         static_cast<float>(crop_rect.top_left.y.as_int()),
@@ -58,7 +58,7 @@ bool mga::FloatSourceCrop::needs_fb_target() const
 void mga::IntegerSourceCrop::fill_source_crop(
     hwc_layer_1_t& hwc_layer, geometry::Rectangle const& crop_rect) const
 {
-    hwc_layer.sourceCropi = 
+    hwc_layer.sourceCropi =
     {
         crop_rect.top_left.x.as_int(),
         crop_rect.top_left.y.as_int(),
@@ -75,7 +75,7 @@ bool mga::IntegerSourceCrop::needs_fb_target() const
 void mga::Hwc10Adapter::fill_source_crop(
     hwc_layer_1_t& hwc_layer, geometry::Rectangle const& crop_rect) const
 {
-    hwc_layer.sourceCropi = 
+    hwc_layer.sourceCropi =
     {
         crop_rect.top_left.x.as_int(),
         crop_rect.top_left.y.as_int(),
@@ -209,7 +209,7 @@ bool mga::HWCLayer::setup_layer(
     hwc_layer->planeAlpha = plane_alpha_max;
 
     /* note, if the sourceCrop and DisplayFrame sizes differ, the output will be linearly scaled */
-    hwc_layer->displayFrame = 
+    hwc_layer->displayFrame =
     {
         position.top_left.x.as_int(),
         position.top_left.y.as_int(),
@@ -224,9 +224,14 @@ bool mga::HWCLayer::setup_layer(
 
     visible_rect = hwc_layer->displayFrame;
 
-    auto native_buffer = mga::to_native_buffer_checked(buffer->native_buffer_handle());
-    needs_commit |= (hwc_layer->handle != native_buffer->handle());
-    hwc_layer->handle = native_buffer->handle();
+    try {
+      auto native_buffer = mga::to_native_buffer_checked(buffer->native_buffer_handle());
+      needs_commit |= (hwc_layer->handle != native_buffer->handle());
+      hwc_layer->handle = native_buffer->handle();
+    } catch(...) {
+      // This may be wayland, we simply have to ignore them since they cannot
+      // Be downcasted, and should not call any android funcs
+    }
 
     return needs_commit;
 }
