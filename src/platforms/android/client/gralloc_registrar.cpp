@@ -24,6 +24,7 @@
 #include "mir/client/client_buffer.h"
 #include "android_format_conversion-inl.h"
 
+
 #include <hybris/gralloc/gralloc.h>
 #include <boost/throw_exception.hpp>
 #include <stdexcept>
