@@ -36,7 +36,7 @@
 #include "mir/test/doubles/stub_android_native_buffer.h"
 #include "src/platforms/android/client/buffer.h"
 //#include "mir/client/buffer.h"
-#include <android/system/graphics.h>
+#include <system/graphics.h>
 #include <EGL/egl.h>
 #include <system/window.h>
 #include <hardware/gralloc.h>

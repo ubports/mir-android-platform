@@ -35,12 +35,12 @@ override_dh_auto_configure:
 ifneq ($(filter armhf arm64,$(DEB_HOST_ARCH)),)
 	dh_auto_configure -- \
 	  $(COMMON_CONFIGURE_OPTIONS) \
-	  -DMIR_PLATFORM=android\;android-caf
+	  -DMIR_PLATFORM=android
 else
 ifneq ($(filter amd64 i386,$(DEB_HOST_ARCH)),)
 	dh_auto_configure -- \
 	  $(COMMON_CONFIGURE_OPTIONS) \
-	  -DMIR_PLATFORM=android\;android-caf
+	  -DMIR_PLATFORM=android
 else
 	dh_auto_configure -- \
 	  $(COMMON_CONFIGURE_OPTIONS) \

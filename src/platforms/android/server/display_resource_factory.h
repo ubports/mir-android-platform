@@ -19,6 +19,7 @@
 #ifndef MIR_GRAPHICS_ANDROID_DISPLAY_RESOURCE_FACTORY_H_
 #define MIR_GRAPHICS_ANDROID_DISPLAY_RESOURCE_FACTORY_H_
 
+#include <android/hardware_buffer.h>
 #include <system/window.h>
 #include <hardware/hwcomposer.h>
 #include <memory>
