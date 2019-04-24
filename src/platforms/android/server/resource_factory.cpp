@@ -28,6 +28,7 @@
 #include "hwc_layerlist.h"
 #include "display.h"
 #include "real_hwc_wrapper.h"
+#include "real_hwc2_wrapper.h"
 
 #include <boost/throw_exception.hpp>
 #include <stdexcept>
@@ -58,22 +59,19 @@ std::tuple<std::shared_ptr<mga::HwcWrapper>, mga::HwcVersion>
 mga::ResourceFactory::create_hwc_wrapper(std::shared_ptr<mga::HwcReport> const& hwc_report) const
 {
     //TODO: could probably be collapsed further into HwcWrapper's constructor
-    hwc_composer_device_1* hwc_device_raw = nullptr;
+    hw_device_t *hwc_device_raw = nullptr;
     hw_module_t const *module;
     int rc = hw_get_module(HWC_HARDWARE_MODULE_ID, &module);
     if ((rc != 0) || (module == nullptr) ||
        (!module->methods) || !(module->methods->open) ||
-       module->methods->open(module, HWC_HARDWARE_COMPOSER, reinterpret_cast<hw_device_t**>(&hwc_device_raw)) ||
+       module->methods->open(module, HWC_HARDWARE_COMPOSER, &hwc_device_raw) ||
        (hwc_device_raw == nullptr))
     {
         BOOST_THROW_EXCEPTION(std::runtime_error("error opening hwc hal"));
     }
 
-    auto hwc_native = std::shared_ptr<hwc_composer_device_1>(hwc_device_raw,
-            [](hwc_composer_device_1* device) { device->common.close((hw_device_t*) device); });
-
     auto version = mga::HwcVersion::hwc10;
-    switch(hwc_native->common.version)
+    switch(hwc_device_raw->version)
     {
         case HWC_DEVICE_API_VERSION_1_0: version = mga::HwcVersion::hwc10; break;
         case HWC_DEVICE_API_VERSION_1_1: version = mga::HwcVersion::hwc11; break;
@@ -81,10 +79,21 @@ mga::ResourceFactory::create_hwc_wrapper(std::shared_ptr<mga::HwcReport> const& 
         case HWC_DEVICE_API_VERSION_1_3: version = mga::HwcVersion::hwc13; break;
         case HWC_DEVICE_API_VERSION_1_4: version = mga::HwcVersion::hwc14; break;
         case HWC_DEVICE_API_VERSION_1_5: version = mga::HwcVersion::hwc15; break;
+        case HWC_DEVICE_API_VERSION_2_0: version = mga::HwcVersion::hwc20; break;
         default: version = mga::HwcVersion::unknown; break;
     }
-    
-    return std::make_tuple(
-        std::make_shared<mga::RealHwcWrapper>(hwc_native, hwc_report),
-        version);
+
+    if (version < mga::HwcVersion::hwc20) {
+        auto hwc_native = std::shared_ptr<hwc_composer_device_1>(
+            reinterpret_cast<hwc_composer_device_1*>(hwc_device_raw),
+            [](hwc_composer_device_1* device) { device->common.close((hw_device_t*) device); });
+
+        return std::make_tuple(
+            std::make_shared<mga::RealHwcWrapper>(hwc_native, hwc_report),
+            version);
+    } else {
+        return std::make_tuple(
+            std::make_shared<mga::RealHwc2Wrapper>(hwc_report),
+            version);
+    }
 }

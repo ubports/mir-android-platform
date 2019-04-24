@@ -18,6 +18,7 @@ if (MIR_BUILD_PLATFORM_ANDROID)
     hwc_fb_device.cpp
     hwc_loggers.cpp
     hwc_device.cpp
+    hwc2_device.cpp
     gralloc_module.cpp
     server_render_window.cpp
     resource_factory.cpp
@@ -27,6 +28,7 @@ if (MIR_BUILD_PLATFORM_ANDROID)
     gl_context.cpp
     device_quirks.cpp
     real_hwc_wrapper.cpp
+    real_hwc2_wrapper.cpp
     hwc_fallback_gl_renderer.cpp
     ipc_operations.cpp
     hwc_blanking_control.cpp
@@ -45,7 +47,7 @@ if (MIR_BUILD_PLATFORM_ANDROID)
       ${ANDROID_HEADERS_INCLUDE_DIRS}
   )
 
-  target_compile_options(mirplatformgraphicsandroidobjects PRIVATE -fpermissive)
+  target_compile_options(mirplatformgraphicsandroidobjects PRIVATE -fpermissive -Wno-error)
 
   add_library(mirplatformgraphicsandroid SHARED
     $<TARGET_OBJECTS:mirplatformgraphicsandroidobjects>
@@ -62,7 +64,7 @@ if (MIR_BUILD_PLATFORM_ANDROID)
     ${LIBHARDWARE_LIBRARIES}
     ${EGL_LDFLAGS} ${EGL_LIBRARIES}
     ${GLESv2_LDFLAGS} ${GLESv2_LIBRARIES}
-    ${ANDROID_PROPERTIES_LDFLAGS}
+    ${ANDROID_PROPERTIES_LDFLAGS} -lhwc2
   )
 
   set_target_properties(
@@ -113,7 +115,7 @@ if (MIR_BUILD_PLATFORM_ANDROID_CAF)
       ${PROJECT_SOURCE_DIR}/src/include/gl
   )
 
-  target_include_directories(mirplatformgraphicsandroidcafobjects SYSTEM PRIVATE 
+  target_include_directories(mirplatformgraphicsandroidcafobjects SYSTEM PRIVATE
       ${EGL_INCLUDE_DIRS}
       ${GLESv2_INCLUDE_DIRS}
       ${ANDROID_CAF_HEADERS_INCLUDE_DIRS}

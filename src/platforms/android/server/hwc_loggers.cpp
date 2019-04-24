@@ -76,9 +76,9 @@ std::ostream& operator<<(std::ostream& str, HwcRotation rotation_key)
         case 0:
             return str << std::string{"NONE"};
         case HWC_TRANSFORM_ROT_90:
-            return str << std::string{"ROT_90"}; 
+            return str << std::string{"ROT_90"};
         case HWC_TRANSFORM_ROT_180:
-            return str << std::string{"ROT_180"}; 
+            return str << std::string{"ROT_180"};
         case HWC_TRANSFORM_ROT_270:
             return str << std::string{"ROT_270"};
         default:
@@ -124,10 +124,10 @@ std::ostream& operator<<(std::ostream& str, HwcType type)
 }
 
 struct HwcRectMember { int member; };
-std::ostream& operator<<(std::ostream& str, HwcRectMember rect) 
+std::ostream& operator<<(std::ostream& str, HwcRectMember rect)
 {
     StreamFormatter stream_format(str, rect_entry_column_size, std::ios_base::right);
-    return str << rect.member; 
+    return str << rect.member;
 }
 
 struct HwcRect { hwc_rect_t const& rect; };
@@ -165,7 +165,7 @@ std::ostream& operator<<(std::ostream& str, mga::OverlayOptimization opt)
         return str << "OFF";
 }
 
-std::ostream& operator<<(std::ostream& str, mga::HwcVersion version) 
+std::ostream& operator<<(std::ostream& str, mga::HwcVersion version)
 {
     switch (version)
     {
@@ -175,6 +175,7 @@ std::ostream& operator<<(std::ostream& str, mga::HwcVersion version)
         case mga::HwcVersion::hwc13: str << "1.3"; break;
         case mga::HwcVersion::hwc14: str << "1.4"; break;
         case mga::HwcVersion::hwc15: str << "1.5"; break;
+        case mga::HwcVersion::hwc20: str << "2.0"; break;
         default: break;
     }
     return str;
