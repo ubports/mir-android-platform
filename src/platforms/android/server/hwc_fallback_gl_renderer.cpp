@@ -76,7 +76,7 @@ void set_display_transform(GLint uniform_loc, geom::Rectangle const& rect)
 }
 
 mga::HWCFallbackGLRenderer::HWCFallbackGLRenderer(
-    gl::ProgramFactory const& factory,
+    mgl::ProgramFactory const& factory,
     renderer::gl::Context const& context,
     geom::Rectangle const& screen_pos)
 {
@@ -87,7 +87,7 @@ mga::HWCFallbackGLRenderer::HWCFallbackGLRenderer(
     glUseProgram(*program);
 
     auto display_transform_uniform = glGetUniformLocation(*program, "display_transform");
-    set_display_transform(display_transform_uniform, screen_pos); 
+    set_display_transform(display_transform_uniform, screen_pos);
 
     position_attr = glGetAttribLocation(*program, "position");
     texcoord_attr = glGetAttribLocation(*program, "texcoord");
@@ -133,8 +133,37 @@ void mga::HWCFallbackGLRenderer::render(
         glVertexAttribPointer(texcoord_attr, 2, GL_FLOAT, GL_FALSE, sizeof(mgl::Vertex),
                               &primitive.vertices[0].texcoord);
 
-        texture_cache->load(*renderable)->bind();
+
+        auto const texture = std::dynamic_pointer_cast<mg::gl::Texture>(renderable->buffer());
+        auto const surface_tex  =
+            [this, &renderable]() -> std::shared_ptr<mir::gl::Texture>
+            {
+                try
+                {
+                    return texture_cache->load(*renderable);
+                }
+                catch (std::exception const&)
+                {
+                    return {nullptr};
+                }
+            }();
+
+        if (surface_tex)
+        {
+            surface_tex->bind();
+        }
+        else
+        {
+            texture->bind();
+        }
+
         glDrawArrays(primitive.type, 0, primitive.nvertices);
+
+        if (texture)
+        {
+            // We're done with the texture for now
+            texture->add_syncpoint();
+        }
     }
 
     glDisableVertexAttribArray(texcoord_attr);

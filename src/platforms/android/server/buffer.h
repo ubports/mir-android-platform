@@ -24,6 +24,7 @@
 #include "mir/renderer/gl/texture_source.h"
 #include "mir/renderer/gl/texture_target.h"
 #include "mir/renderer/sw/pixel_source.h"
+#include "mir/graphics/texture.h"
 
 #include <hardware/gralloc.h>
 
@@ -37,6 +38,7 @@
 #define EGL_EGLEXT_PROTOTYPES
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <GLES2/gl2.h>
 
 namespace mir
 {
@@ -45,11 +47,42 @@ namespace graphics
 struct EGLExtensions;
 namespace android
 {
+/*
+ * renderer::gl::TextureSource and graphics::gl::Texture both have
+ * a bind() method. They need to do different things.
+ *
+ * Because we can't just override them based on their signature,
+ * do the intermediate-base-class trick of having two proxy bases
+ * which do nothing but rename bind() to something unique.
+ */
+
+class BindResolverTex : public gl::Texture
+{
+public:
+    BindResolverTex() = default;
+
+    void bind() override final;
+
+protected:
+    virtual void tex_bind() = 0;
+};
+
+class BindResolverTexTarget : public renderer::gl::TextureSource
+{
+public:
+    BindResolverTexTarget() = default;
+
+    void bind() override final;
+
+protected:
+    virtual void upload_to_texture() = 0;
+};
 
 class NativeBuffer;
 class Buffer: public BufferBasic, public NativeBufferBase,
-              public renderer::gl::TextureSource,
+              public BindResolverTexTarget,
               public renderer::gl::TextureTarget,
+              public BindResolverTex,
               public renderer::software::PixelSource
 {
 public:
@@ -62,7 +95,7 @@ public:
     geometry::Stride stride() const override;
     MirPixelFormat pixel_format() const override;
     void gl_bind_to_texture() override;
-    void bind() override;
+    void upload_to_texture() override;
     void secure_for_render() override;
 
     void bind_for_write() override;
@@ -77,6 +110,13 @@ public:
 
     NativeBufferBase* native_buffer_base() override;
 
+    gl::Program const& shader(gl::ProgramFactory& cache) const override;
+    Layout layout() const override;
+    void add_syncpoint() override;
+
+protected:
+    void tex_bind() override;
+
 private:
     void bind(std::unique_lock<std::mutex> const&);
     void secure_for_render(std::unique_lock<std::mutex> const&);
@@ -88,6 +128,7 @@ private:
     std::mutex mutable content_lock;
     std::shared_ptr<android::NativeBuffer> native_buffer;
     std::shared_ptr<EGLExtensions> egl_extensions;
+    GLuint tex_id{0};
 };
 
 }
