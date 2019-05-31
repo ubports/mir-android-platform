@@ -22,6 +22,8 @@
 #include "sync_fence.h"
 #include "gralloc_registrar.h"
 #include "mir/client/client_buffer.h"
+#include "android_format_conversion-inl.h"
+
 
 #include <boost/throw_exception.hpp>
 #include <stdexcept>
@@ -82,6 +84,7 @@ std::shared_ptr<mga::NativeBuffer> create_native_buffer(
     //about byte-stride, they will pass stride via ANativeWindowBuffer::handle (which is opaque to us)
     anwb->stride = package.stride / MIR_BYTES_PER_PIXEL(pf);
     anwb->usage = GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_RENDER;
+    anwb->format = mga::to_android_format(pf);
     anwb->handle = handle.get();
 
     auto sync = std::make_shared<mg::NullCommandSync>(); //no need for eglsync client side
