@@ -37,14 +37,12 @@ class GrallocModule : public Gralloc
 {
 public:
     explicit GrallocModule(
-        std::shared_ptr<struct alloc_device_t> const& alloc_device,
         std::shared_ptr<CommandStreamSyncFactory> const& cmdstream_sync_factory,
         std::shared_ptr<DeviceQuirks> const& quirks);
     std::shared_ptr<NativeBuffer> alloc_buffer(geometry::Size,
         uint32_t android_format, uint32_t usage_bitmask) override;
 
 private:
-    std::shared_ptr<struct alloc_device_t> alloc_dev;
     std::shared_ptr<CommandStreamSyncFactory> const sync_factory;
     std::shared_ptr<DeviceQuirks> const quirks;
     unsigned int convert_to_android_usage(BufferUsage usage);

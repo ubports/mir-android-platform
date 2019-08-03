@@ -6,7 +6,6 @@ list(APPEND ANDROID_UNIT_TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/test_display.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/test_display_generic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/test_display_group.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test_gralloc.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/test_graphic_buffer_allocator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/test_hwc_device.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/test_hwc_fb_device.cpp

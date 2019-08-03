@@ -31,6 +31,7 @@
 #include "egl_sync_fence.h"
 #include "android_format_conversion-inl.h"
 
+#include <hybris/gralloc/gralloc.h>
 #include <boost/throw_exception.hpp>
 
 #include <stdexcept>
@@ -39,21 +40,6 @@ namespace mg  = mir::graphics;
 namespace mga = mir::graphics::android;
 namespace geom = mir::geometry;
 
-namespace
-{
-
-void alloc_dev_deleter(alloc_device_t* t)
-{
-    /* android takes care of delete for us */
-    t->common.close((hw_device_t*)t);
-}
-
-void null_alloc_dev_deleter(alloc_device_t*)
-{
-}
-
-}
-
 mga::GraphicBufferAllocator::GraphicBufferAllocator(
     std::shared_ptr<CommandStreamSyncFactory> const& cmdstream_sync_factory,
     std::shared_ptr<DeviceQuirks> const& quirks)
@@ -61,25 +47,13 @@ mga::GraphicBufferAllocator::GraphicBufferAllocator(
     cmdstream_sync_factory(cmdstream_sync_factory),
     quirks(quirks)
 {
-    int err;
-
-    err = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &hw_module);
-    if (err < 0)
-        BOOST_THROW_EXCEPTION(std::runtime_error("Could not open hardware module"));
-
-    struct alloc_device_t* alloc_dev;
-    err = hw_module->methods->open(hw_module, GRALLOC_HARDWARE_GPU0, (struct hw_device_t**) &alloc_dev);
-    if (err < 0)
-        BOOST_THROW_EXCEPTION(std::runtime_error("Could not open hardware module"));
+    /* FIXME: it should be called only once, but gets called from somewhere else.
+       hybris_gralloc_initialize(0); /*
 
     /* note for future use: at this point, the hardware module should be filled with vendor information
        that we can determine different courses of action based upon */
 
-    std::shared_ptr<struct alloc_device_t> alloc_dev_ptr(
-        alloc_dev,
-        quirks->gralloc_cannot_be_closed_safely() ? null_alloc_dev_deleter : alloc_dev_deleter);
-    alloc_device = std::make_shared<mga::GrallocModule>(
-        alloc_dev_ptr, cmdstream_sync_factory, quirks);
+    alloc_device = std::make_shared<mga::GrallocModule>(cmdstream_sync_factory, quirks);
 }
 
 std::shared_ptr<mg::Buffer> mga::GraphicBufferAllocator::alloc_buffer(

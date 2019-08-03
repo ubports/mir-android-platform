@@ -25,6 +25,7 @@
 #include "device_quirks.h"
 #include "cmdstream_sync_factory.h"
 
+#include <hybris/gralloc/gralloc.h>
 #include <boost/throw_exception.hpp>
 #include <boost/exception/errinfo_errno.hpp>
 #include <stdexcept>
@@ -37,24 +38,18 @@ namespace
 {
 struct AndroidBufferHandleDeleter
 {
-    AndroidBufferHandleDeleter(std::shared_ptr<alloc_device_t> const& alloc_dev)
-        : alloc_device(alloc_dev)
-    {}
+    AndroidBufferHandleDeleter() {}
 
     void operator()(native_handle_t const* t)
     {
-        alloc_device->free(alloc_device.get(), t);
+        hybris_gralloc_release(t, 1);
     }
-private:
-    std::shared_ptr<alloc_device_t> const alloc_device;
 };
 }
 
 mga::GrallocModule::GrallocModule(
-    std::shared_ptr<struct alloc_device_t> const& alloc_device,
     std::shared_ptr<CommandStreamSyncFactory> const& sync_factory,
     std::shared_ptr<DeviceQuirks> const& quirks) :
-    alloc_dev(alloc_device),
     sync_factory(sync_factory),
     quirks(quirks)
 {
@@ -64,10 +59,10 @@ std::shared_ptr<mga::NativeBuffer> mga::GrallocModule::alloc_buffer(
     geometry::Size size, uint32_t format, uint32_t usage_flag)
 {
     buffer_handle_t buf_handle = NULL;
-    auto stride = 0;
+    uint32_t stride = 0;
     auto width = static_cast<int>(size.width.as_uint32_t());
     auto height = static_cast<int>(size.height.as_uint32_t());
-    auto ret = alloc_dev->alloc(alloc_dev.get(), quirks->aligned_width(width), height,
+    auto ret = hybris_gralloc_allocate(quirks->aligned_width(width), height,
                            format, usage_flag, &buf_handle, &stride);
 
     if (( ret ) || (buf_handle == NULL) || (stride == 0))
@@ -77,7 +72,7 @@ std::shared_ptr<mga::NativeBuffer> mga::GrallocModule::alloc_buffer(
             << boost::errinfo_errno(-ret));
     }
 
-    AndroidBufferHandleDeleter del1(alloc_dev);
+    AndroidBufferHandleDeleter del1;
     std::shared_ptr<native_handle_t const> handle(buf_handle, del1);
 
     auto ops = std::make_shared<mga::RealSyncFileOps>();
