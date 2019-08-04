@@ -89,8 +89,30 @@ static void hotplug_hook(HWC2EventListener* listener, int32_t sequenceId,
     std::unique_lock<std::mutex> lk(callback_lock);
     if ((callbacks = reinterpret_cast<mga::Hwc2Callbacks const*>(listener)) && callbacks->self)
         callbacks->self->hotplug(display_name(display), connected);
+
+    hwc2_compat_device_on_hotplug(callbacks->hwc2_device, display, connected);
 }
-static mga::Hwc2Callbacks hwc_callbacks{{vsync_hook, hotplug_hook, refresh_hook}, nullptr};
+static mga::Hwc2Callbacks hwc_callbacks{{vsync_hook, hotplug_hook, refresh_hook}, nullptr, nullptr};
+
+struct free_delete
+{
+    void operator()(void* x) { free(x); }
+};
+
+static std::unique_ptr<HWC2DisplayConfig, free_delete> get_active_config(
+    hwc2_compat_device_t* hwc2_device, mga::DisplayName display_name)
+{
+    auto hwc2_display = std::unique_ptr<hwc2_compat_display_t, free_delete>(
+        hwc2_compat_device_get_display_by_id(hwc2_device, as_hwc_display(display_name)));
+    if (!hwc2_display) {
+        std::stringstream ss;
+        ss << "Attempted to get active configuration for unconnected display: " << as_hwc_display(display_name);
+        BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
+    }
+
+    return std::unique_ptr<HWC2DisplayConfig, free_delete>(
+        hwc2_compat_display_get_active_config(hwc2_display.get()));
+}
 
 }
 
@@ -101,7 +123,6 @@ mga::RealHwc2Wrapper::RealHwc2Wrapper(
     report(report)
 {
     std::unique_lock<std::mutex> lk(callback_lock);
-    hwc_callbacks.self = this;
 
     hwc2_device = hwc2_compat_device_new(false);
     assert(hwc2_device);
@@ -111,8 +132,13 @@ mga::RealHwc2Wrapper::RealHwc2Wrapper(
     is_plugged[HWC_DISPLAY_EXTERNAL].store(false);
     is_plugged[HWC_DISPLAY_VIRTUAL].store(true);
 
+    hwc_callbacks.self = this;
+    hwc_callbacks.hwc2_device = hwc2_device;
+
+    lk.unlock();
     hwc2_compat_device_register_callback(hwc2_device, reinterpret_cast<HWC2EventListener*>(&hwc_callbacks),
         mga::RealHwc2Wrapper::composerSequenceId++);
+    lk.lock();
 
     for (int i = 0; i < 5 * 1000; ++i) {
         // Wait at most 5s for hotplug events
@@ -295,15 +321,39 @@ std::vector<mga::ConfigId> mga::RealHwc2Wrapper::display_configs(DisplayName dis
     // for(auto& id : config_ids)
     //     id = mga::ConfigId{display_config[i++]};
     // return config_ids;
-    return {};
+    return {active_config_for(display_name)};
 }
 
 int mga::RealHwc2Wrapper::display_attributes(
-    DisplayName display_name, ConfigId config, uint32_t const* attributes, int32_t* values) const
+    DisplayName display_name, ConfigId config_id, uint32_t const* attributes, int32_t* values) const
 {
+    auto config = get_active_config(hwc2_device, display_name);
+    if (!config) {
+        std::stringstream ss;
+        ss << "No active configuration for display: " << as_hwc_display(display_name);
+        BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
+    }
+
+    for (int i = 0; attributes[i] != HWC_DISPLAY_NO_ATTRIBUTE; i++) {
+        switch(attributes[i]) {
+            case HWC_DISPLAY_WIDTH:
+                values[i] = config->width;
+                break;
+            case HWC_DISPLAY_HEIGHT:
+                values[i] = config->height;
+                break;
+            case HWC_DISPLAY_VSYNC_PERIOD:
+                values[i] = config->vsyncPeriod;
+                break;
+            case HWC_DISPLAY_DPI_X:
+                values[i] = config->dpiX;
+                break;
+            case HWC_DISPLAY_DPI_Y:
+                values[i] = config->dpiY;
+                break;
+        }
+    }
     return 0;
-    // return hwc_device->getDisplayAttributes(
-    //     hwc_device.get(), as_hwc_display(display_name), config.as_value(), attributes, values);
 }
 
 void mga::RealHwc2Wrapper::power_mode(DisplayName display_name, PowerMode mode) const
@@ -319,22 +369,20 @@ void mga::RealHwc2Wrapper::power_mode(DisplayName display_name, PowerMode mode) 
 
 bool mga::RealHwc2Wrapper::has_active_config(DisplayName display_name) const
 {
-    int const no_active_config = -1;
-    //return hwc_device->getActiveConfig(hwc_device.get(), as_hwc_display(display_name)) != no_active_config;
-    return 0;
+    auto config = get_active_config(hwc2_device, display_name);
+    return config.get() != nullptr;
 }
 
 mga::ConfigId mga::RealHwc2Wrapper::active_config_for(DisplayName display_name) const
 {
-    int id = 0;
-    // int id = hwc_device->getActiveConfig(hwc_device.get(), as_hwc_display(display_name));
-    // if (id == -1)
-    // {
-    //     std::stringstream ss;
-    //     ss << "No active configuration for display: " << as_hwc_display(display_name);
-    //     BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
-    // }
-    return mga::ConfigId{static_cast<uint32_t>(id)};
+    auto config = get_active_config(hwc2_device, display_name);
+    if (!config)
+    {
+        std::stringstream ss;
+        ss << "No active configuration for display: " << as_hwc_display(display_name);
+        BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
+    }
+    return mga::ConfigId{static_cast<uint32_t>(config->id)};
 }
 
 void mga::RealHwc2Wrapper::set_active_config(DisplayName display_name, ConfigId id) const

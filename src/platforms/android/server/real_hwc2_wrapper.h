@@ -40,6 +40,7 @@ struct Hwc2Callbacks
 {
     HWC2EventListener listener;
     RealHwc2Wrapper* self;
+    hwc2_compat_device_t* hwc2_device;
 };
 
 class RealHwc2Wrapper : public HwcWrapper
