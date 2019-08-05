@@ -23,6 +23,7 @@
 #include "android_format_conversion-inl.h"
 #include <boost/throw_exception.hpp>
 #include <hardware/gralloc.h>
+#include <sstream>
 #include <stdexcept>
 #include <system/graphics.h>
 #include <system/window.h>
@@ -124,8 +125,13 @@ int mcla::EGLNativeSurfaceInterpreter::driver_requests_info(int key) const
         return HAL_DATASPACE_UNKNOWN;
     case NATIVE_WINDOW_BUFFER_AGE:
         return last_buffer_age;
+    case NATIVE_WINDOW_IS_VALID:
+        // true
+        return 1;
     default:
-        throw std::runtime_error("driver requested unsupported query");
+        std::stringstream sstream;
+        sstream << "driver requested unsupported query. key: " << key;
+        throw std::runtime_error(sstream.str());
     }
 }
 

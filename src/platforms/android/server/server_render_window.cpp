@@ -105,6 +105,9 @@ int mga::ServerRenderWindow::driver_requests_info(int key) const
             return 20;
         case NATIVE_WINDOW_LAST_DEQUEUE_DURATION:
             return 20;
+        case NATIVE_WINDOW_IS_VALID:
+            // true
+            return 1;
         default:
             {
             std::stringstream sstream;
