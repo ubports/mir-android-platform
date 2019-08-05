@@ -24,7 +24,7 @@
 #include "mir/client/client_buffer.h"
 #include "android_format_conversion-inl.h"
 
-
+#include <hybris/gralloc/gralloc.h>
 #include <boost/throw_exception.hpp>
 #include <stdexcept>
 
@@ -38,28 +38,25 @@ namespace
 {
 struct NativeHandleDeleter
 {
-    NativeHandleDeleter(const std::shared_ptr<const gralloc_module_t>& mod)
-        : module(mod)
-    {}
+    NativeHandleDeleter() {}
 
     void operator()(const native_handle_t* t)
     {
-        module->unregisterBuffer(module.get(), t);
+        hybris_gralloc_release(t, 0/*was_allocated*/);
         for (auto i = 0; i < t->numFds; i++)
         {
             close(t->data[i]);
         }
         ::operator delete(const_cast<native_handle_t*>(t));
     }
-private:
-    const std::shared_ptr<const gralloc_module_t> module;
 };
 
 }
 
-mcla::GrallocRegistrar::GrallocRegistrar(const std::shared_ptr<const gralloc_module_t>& gr_module) :
-    gralloc_module(gr_module)
-{
+mcla::GrallocRegistrar::GrallocRegistrar() {
+    // Force libhybris EGL platform to initialize gralloc
+    eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    //hybris_gralloc_initialize(0/*framebuffer*/);
 }
 
 namespace
@@ -125,13 +122,13 @@ std::shared_ptr<mga::NativeBuffer> mcla::GrallocRegistrar::register_buffer(
     for (auto i = 0; i < handle->numInts; i++)
         handle->data[handle->numFds+i] = package.data[i];
 
-    if (gralloc_module->registerBuffer(gralloc_module.get(), handle))
+    if (hybris_gralloc_retain(handle))
     {
         ::operator delete(handle);
         BOOST_THROW_EXCEPTION(std::runtime_error("error registering graphics buffer for client use\n"));
     }
 
-    NativeHandleDeleter del(gralloc_module);
+    NativeHandleDeleter del;
     return create_native_buffer(std::shared_ptr<const native_handle_t>(handle, del), fence, package, pf);
 }
 
@@ -145,14 +142,13 @@ std::shared_ptr<char> mcla::GrallocRegistrar::secure_for_cpu(
     int height = rect.size.height.as_uint32_t();
     int top = rect.top_left.x.as_uint32_t();
     int left = rect.top_left.y.as_uint32_t();
-    if ( gralloc_module->lock(gralloc_module.get(), handle->handle(),
+    if ( hybris_gralloc_lock(handle->handle(),
                               usage, top, left, width, height, (void**) &vaddr) )
         BOOST_THROW_EXCEPTION(std::runtime_error("error securing buffer for client cpu use"));
 
-    auto module = gralloc_module;
-    return std::shared_ptr<char>(vaddr, [module, handle](char*)
+    return std::shared_ptr<char>(vaddr, [handle](char*)
         {
-            module->unlock(module.get(), handle->handle());
+            hybris_gralloc_unlock(handle->handle());
             //we didn't alloc region(just mapped it), so we don't delete
         });
 }

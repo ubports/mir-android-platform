@@ -376,17 +376,7 @@ mcla::AndroidClientPlatform::AndroidClientPlatform(
 
 std::shared_ptr<mcl::ClientBufferFactory> mcla::AndroidClientPlatform::create_buffer_factory()
 {
-    const hw_module_t *hw_module;
-    int error = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &hw_module);
-    if (error < 0)
-    {
-        BOOST_THROW_EXCEPTION(std::runtime_error("Could not open hardware module"));
-    }
-
-    gralloc_module_t* gr_dev = (gralloc_module_t*) hw_module;
-    /* we use an empty deleter because hw_get_module does not give us the ownership of the ptr */
-    auto gralloc_dev = std::shared_ptr<gralloc_module_t>(gr_dev, [](auto){});
-    auto registrar = std::make_shared<mcla::GrallocRegistrar>(gralloc_dev);
+    auto registrar = std::make_shared<mcla::GrallocRegistrar>();
     return std::make_shared<mcla::AndroidClientBufferFactory>(registrar);
 }
 

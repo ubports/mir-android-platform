@@ -27,6 +27,7 @@
 #include <system/window.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <hybris/gralloc/gralloc.h>
 #include <boost/throw_exception.hpp>
 #include <stdexcept>
 
@@ -165,8 +166,8 @@ void mga::Buffer::write(unsigned char const* data, size_t data_size)
     int height = size().height.as_uint32_t();
     int top = 0;
     int left = 0;
-    if (hw_module->lock(
-            hw_module, native_buffer->handle(), usage, top, left, width, height, reinterpret_cast<void**>(&vaddr)) ||
+    if (hybris_gralloc_lock(
+            native_buffer->handle(), usage, top, left, width, height, reinterpret_cast<void**>(&vaddr)) ||
         !vaddr)
         BOOST_THROW_EXCEPTION(std::runtime_error("error securing buffer for client cpu use"));
 
@@ -178,7 +179,7 @@ void mga::Buffer::write(unsigned char const* data, size_t data_size)
         memcpy(vaddr + line_offset_in_buffer, data + line_offset_in_source, width * bpp);
     }
     
-    hw_module->unlock(hw_module, native_buffer->handle());
+    hybris_gralloc_unlock(native_buffer->handle());
 }
 
 void mga::Buffer::read(std::function<void(unsigned char const*)> const& do_with_data)
@@ -195,14 +196,14 @@ void mga::Buffer::read(std::function<void(unsigned char const*)> const& do_with_
 
     int top = 0;
     int left = 0;
-    if ((hw_module->lock(
-        hw_module, native_buffer->handle(), usage, top, left, width, height, reinterpret_cast<void**>(&vaddr)) ) ||
+    if ((hybris_gralloc_lock(
+        native_buffer->handle(), usage, top, left, width, height, reinterpret_cast<void**>(&vaddr)) ) ||
         !vaddr)
         BOOST_THROW_EXCEPTION(std::runtime_error("error securing buffer for client cpu use"));
 
     do_with_data(vaddr);
 
-    hw_module->unlock(hw_module, native_buffer->handle());
+    hybris_gralloc_unlock(native_buffer->handle());
 }
 
 mg::NativeBufferBase* mga::Buffer::native_buffer_base()

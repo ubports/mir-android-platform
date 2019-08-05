@@ -38,6 +38,7 @@ if (MIR_BUILD_PLATFORM_ANDROID)
     ${MIRCLIENT_LDFLAGS}
     dl
     ${LIBHARDWARE_LIBRARIES}
+    -lgralloc -lhybris-eglplatformcommon
     ${EGL_LDFLAGS} ${EGL_LIBRARIES}
   )
 
