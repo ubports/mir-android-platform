@@ -1,4 +1,5 @@
 /*
+ * Copyright © 2017 The UBports project.
  * Copyright © 2012 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify it
@@ -15,6 +16,7 @@
  *
  * Authored by:
  *   Kevin DuBois <kevin.dubois@canonical.com>
+ *   Marius Gripsgard <marius@ubports.com>
  */
 
 #ifndef MIR_PLATFORM_ANDROID_GRAPHIC_BUFFER_ALLOCATOR_H_
@@ -22,16 +24,27 @@
 
 #include <cstddef>  // to fix missing #includes in graphics.h from hardware.h
 #include <hardware/hardware.h>
-#include "mir_toolkit/mir_native_buffer.h" 
+#include "mir_toolkit/mir_native_buffer.h"
 
 #include "mir/graphics/buffer_properties.h"
 #include "mir/graphics/graphic_buffer_allocator.h"
+#include "mir/graphics/wayland_allocator.h"
+
+#include <EGL/egl.h>
 
 namespace mir
 {
+namespace renderer
+{
+namespace gl
+{
+class Context;
+}
+}
 namespace graphics
 {
 
+class Display;
 class EGLExtensions;
 
 namespace android
@@ -41,7 +54,9 @@ class Gralloc;
 class DeviceQuirks;
 class CommandStreamSyncFactory;
 
-class GraphicBufferAllocator: public graphics::GraphicBufferAllocator
+class GraphicBufferAllocator:
+  public graphics::GraphicBufferAllocator,
+  public graphics::WaylandAllocator
 {
 public:
     GraphicBufferAllocator(
@@ -50,7 +65,7 @@ public:
 
     std::shared_ptr<graphics::Buffer> alloc_buffer(
         graphics::BufferProperties const& buffer_properties) override;
-    std::shared_ptr<graphics::Buffer> alloc_buffer(geometry::Size, uint32_t format, uint32_t flags) override; 
+    std::shared_ptr<graphics::Buffer> alloc_buffer(geometry::Size, uint32_t format, uint32_t flags) override;
     std::shared_ptr<graphics::Buffer> alloc_software_buffer(geometry::Size, MirPixelFormat) override;
 
     std::shared_ptr<graphics::Buffer> alloc_framebuffer(
@@ -58,12 +73,23 @@ public:
 
     std::vector<MirPixelFormat> supported_pixel_formats() override;
 
+    // WaylandAllocator
+    void bind_display(wl_display* display, std::shared_ptr<Executor> wayland_executor) override;
+    std::shared_ptr<Buffer> buffer_from_resource(
+        wl_resource* buffer,
+        std::function<void()>&& on_consumed,
+        std::function<void()>&& on_release) override;
+    void set_ctx(graphics::Display const& output);
 private:
     const hw_module_t    *hw_module;
     std::shared_ptr<Gralloc> alloc_device;
     std::shared_ptr<EGLExtensions> const egl_extensions;
     std::shared_ptr<CommandStreamSyncFactory> const cmdstream_sync_factory;
     std::shared_ptr<DeviceQuirks> const quirks;
+
+    // WaylandTexBuffer
+    std::shared_ptr<renderer::gl::Context> ctx;
+    std::shared_ptr<Executor> wayland_executor;
 };
 
 }
