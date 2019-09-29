@@ -21,6 +21,7 @@
 #include "hwc2_device.h"
 #include "hwc_layerlist.h"
 #include "hwc_wrapper.h"
+#include "real_hwc2_wrapper.h"
 #include "framebuffer_bundle.h"
 #include "buffer.h"
 #include "hwc_fallback_gl_renderer.h"
@@ -139,7 +140,8 @@ void mga::Hwc2Device::commit(std::list<DisplayContents> const& contents)
         }
     }
 
-    hwc_wrapper->set(lists);
+    auto hwc2_wrapper = dynamic_cast<mga::RealHwc2Wrapper*>(hwc_wrapper.get());
+    hwc2_wrapper->set(lists, contents);
     onscreen_overlay_buffers = std::move(next_onscreen_overlay_buffers);
 
     for (auto& content : contents)

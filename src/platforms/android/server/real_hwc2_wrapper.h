@@ -20,6 +20,7 @@
 #define MIR_GRAPHICS_ANDROID_REAL_HWC2_WRAPPER_H_
 
 #include "hwc_wrapper.h"
+#include "display_device.h"
 #include <memory>
 #include <hardware/hwcomposer.h>
 #include <hybris/hwc2/hwc2_compatibility_layer.h>
@@ -27,6 +28,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <atomic>
+#include <list>
 
 namespace mir
 {
@@ -67,6 +69,7 @@ public:
 
     void prepare(std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const&) const override;
     void set(std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const&) const override;
+    void set(std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const&, std::list<DisplayContents> const&) const;
     void vsync_signal_on(DisplayName) const override;
     void vsync_signal_off(DisplayName) const override;
     void display_on(DisplayName) const override;

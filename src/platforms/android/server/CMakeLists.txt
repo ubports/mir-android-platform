@@ -65,7 +65,7 @@ if (MIR_BUILD_PLATFORM_ANDROID)
     ${EGL_LDFLAGS} ${EGL_LIBRARIES}
     ${GLESv2_LDFLAGS} ${GLESv2_LIBRARIES}
     ${ANDROID_PROPERTIES_LDFLAGS}
-    -lhwc2 -lgralloc -lhybris-eglplatformcommon
+    -lhwc2 -lgralloc -lhybris-eglplatformcommon -lsync
   )
 
   set_target_properties(

@@ -18,12 +18,19 @@
 
 #include "mir/graphics/frame.h"
 #include "real_hwc2_wrapper.h"
+#include "buffer.h"
+#include "native_buffer.h"
 #include "hwc_report.h"
+#include "hwc_layerlist.h"
 #include "display_device_exceptions.h"
 #include <boost/throw_exception.hpp>
 #include <stdexcept>
 #include <sstream>
 #include <algorithm>
+#include <sync/sync.h>
+
+#define MIR_LOG_COMPONENT "android/server"
+#include "mir/log.h"
 
 namespace mg = mir::graphics;
 namespace mga=mir::graphics::android;
@@ -218,27 +225,62 @@ void mga::RealHwc2Wrapper::prepare(
 }
 
 void mga::RealHwc2Wrapper::set(
-    std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& displays) const
+    std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& hwc1_displays) const
 {
-    report->report_set_list(displays);
-    //auto const num_displays = ::num_displays(displays);
-    // if (auto rc = hwc_device->set(hwc_device.get(), num_displays,
-    //     const_cast<hwc_display_contents_1**>(displays.data())))
-    // {
-    //     std::stringstream ss;
-    //     ss << "error during hwc set(). rc = " << std::hex << rc;
+    BOOST_THROW_EXCEPTION(std::logic_error("hwc2 set() called without contents list"));
+}
 
-    //     if (num_displays > 1)
-    //     {
-    //         if (!display_connected(DisplayName::external))
-    //             BOOST_THROW_EXCEPTION(mga::DisplayDisconnectedException(ss.str()));
-    //         else
-    //             BOOST_THROW_EXCEPTION(mga::ExternalDisplayError(ss.str()));
-    //     }
+void mga::RealHwc2Wrapper::set(
+    std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& hwc1_displays,
+    std::list<mga::DisplayContents> const& contents) const
+{
+    report->report_set_list(hwc1_displays);
 
-    //     BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
-    // }
-    report->report_set_done(displays);
+    int display_id = 0;
+    auto hwc2_display = display_contents[display_id].first.get();
+    auto& fblayer = hwc1_displays[0]->hwLayers[1];
+    static int last_present_fence = -1;
+    bool sync_before_set = true;
+
+    assert(contents.size() == 1); // No multiple displays support that far
+
+    std::shared_ptr<Buffer> buffer = nullptr;
+    for (auto& it : contents.front().list) {
+        assert(buffer == nullptr); // There should be only a single layer with buffer
+        buffer = it.layer.buffer();
+    }
+
+    auto acquire_fence_fd = fblayer.acquireFenceFd;
+
+    if (sync_before_set && acquire_fence_fd >= 0) {
+        sync_wait(acquire_fence_fd, -1);
+        close(acquire_fence_fd);
+        acquire_fence_fd = -1;
+    }
+
+    auto native_buffer = mga::to_native_buffer_checked(buffer->native_buffer_handle());
+
+    hwc2_compat_display_set_client_target(hwc2_display, /* slot */0, native_buffer->anwb(),
+                                          acquire_fence_fd,
+                                          HAL_DATASPACE_UNKNOWN);
+
+    int presentFence = -1;
+
+    if (auto rc = hwc2_compat_display_present(hwc2_display, &presentFence)) {
+        std::stringstream ss;
+        ss << "error during hwc set(). rc = " << std::hex << rc;
+        BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
+    }
+    fblayer.releaseFenceFd = presentFence;
+
+    if (last_present_fence != -1) {
+        sync_wait(last_present_fence, -1);
+        close(last_present_fence);
+    }
+
+    last_present_fence = presentFence != -1 ? dup(presentFence) : -1;
+
+    report->report_set_done(hwc1_displays);
 }
 
 void mga::RealHwc2Wrapper::vsync_signal_on(DisplayName display_name) const
