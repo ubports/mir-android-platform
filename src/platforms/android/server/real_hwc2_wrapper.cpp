@@ -94,15 +94,10 @@ static void hotplug_hook(HWC2EventListener* listener, int32_t sequenceId,
 }
 static mga::Hwc2Callbacks hwc_callbacks{{vsync_hook, hotplug_hook, refresh_hook}, nullptr, nullptr};
 
-struct free_delete
-{
-    void operator()(void* x) { free(x); }
-};
-
-static std::unique_ptr<HWC2DisplayConfig, free_delete> get_active_config(
+static mga::HWC2DisplayConfig_ptr get_active_config(
     hwc2_compat_device_t* hwc2_device, mga::DisplayName display_name)
 {
-    auto hwc2_display = std::unique_ptr<hwc2_compat_display_t, free_delete>(
+    auto hwc2_display = mga::hwc2_compat_display_ptr(
         hwc2_compat_device_get_display_by_id(hwc2_device, as_hwc_display(display_name)));
     if (!hwc2_display) {
         std::stringstream ss;
@@ -110,7 +105,7 @@ static std::unique_ptr<HWC2DisplayConfig, free_delete> get_active_config(
         BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
     }
 
-    return std::unique_ptr<HWC2DisplayConfig, free_delete>(
+    return mga::HWC2DisplayConfig_ptr(
         hwc2_compat_display_get_active_config(hwc2_display.get()));
 }
 
@@ -155,18 +150,71 @@ mga::RealHwc2Wrapper::~RealHwc2Wrapper()
 }
 
 void mga::RealHwc2Wrapper::prepare(
-    std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& displays) const
+    std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& hwc1_displays) const
 {
-    report->report_list_submitted_to_prepare(displays);
-    // if (auto rc = hwc_device->prepare(hwc_device.get(), num_displays(displays),
-    //     const_cast<hwc_display_contents_1**>(displays.data())))
-    // {
-    //     std::stringstream ss;
-    //     ss << "error during hwc prepare(). rc = " << std::hex << rc;
-    //     BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
-    // }
+    report->report_list_submitted_to_prepare(hwc1_displays);
+    for (int i = 0; i < num_displays(hwc1_displays); i++) {
+        auto hwc1_display = hwc1_displays[i];
+        if (i == 0) { // primary display
+            auto it = display_contents.find(i);
 
-    report->report_prepare_done(displays);
+            if (it == display_contents.end()) {
+                display_contents.emplace(i, std::make_pair(
+                    mga::hwc2_compat_display_ptr{hwc2_compat_device_get_display_by_id(hwc2_device,
+                        as_hwc_display(mga::DisplayName::primary))},
+                    std::vector<hwc2_compat_layer_t*>{}));
+
+                it = display_contents.find(i);
+            }
+
+            auto& display_pair = it->second;
+            auto& layers = display_pair.second;
+
+            if (hwc1_display->numHwLayers && layers.size() < 1) {
+                auto layer = hwc2_compat_display_create_layer(display_pair.first.get());
+                layers.push_back(layer);
+
+                auto width = hwc1_display->hwLayers[0].displayFrame.right;
+                auto height = hwc1_display->hwLayers[0].displayFrame.bottom;
+
+                hwc2_compat_layer_set_composition_type(layer, HWC2_COMPOSITION_CLIENT);
+                hwc2_compat_layer_set_blend_mode(layer, HWC2_BLEND_MODE_NONE);
+                hwc2_compat_layer_set_source_crop(layer, 0.0f, 0.0f, width, height);
+                hwc2_compat_layer_set_display_frame(layer, 0, 0, width, height);
+                hwc2_compat_layer_set_visible_region(layer, 0, 0, width, height);
+            }
+        }
+    }
+
+    uint32_t num_types = 0;
+    uint32_t num_requests = 0;
+    int display_id = 0;
+    auto hwc2_display = display_contents[display_id].first.get();
+
+    auto error = hwc2_compat_display_validate(hwc2_display, &num_types, &num_requests);
+
+    if (error != HWC2_ERROR_NONE && error != HWC2_ERROR_HAS_CHANGES) {
+        std::stringstream ss;
+        ss << "prepare: validate failed for display " << display_id << ": " << error;
+        BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
+    }
+
+    if (num_types || num_requests) {
+        std::stringstream ss;
+        ss << "prepare: validate required changes for display " << display_id << ": " << error;
+        BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
+        return;
+    }
+
+    error = hwc2_compat_display_accept_changes(hwc2_display);
+    if (error != HWC2_ERROR_NONE) {
+        std::stringstream ss;
+        ss << "prepare: acceptChanges failed: " << error;
+        BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
+        return;
+    }
+
+    report->report_prepare_done(hwc1_displays);
 }
 
 void mga::RealHwc2Wrapper::set(

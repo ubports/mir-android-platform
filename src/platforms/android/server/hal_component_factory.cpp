@@ -127,6 +127,9 @@ std::unique_ptr<mga::LayerList> mga::HalComponentFactory::create_layer_list()
         case mga::HwcVersion::hwc15:
             return std::unique_ptr<mga::LayerList>(
                 new mga::LayerList(std::make_shared<mga::FloatSourceCrop>(), {}, offset));
+        case mga::HwcVersion::hwc20:
+            return std::unique_ptr<mga::LayerList>(
+                new mga::LayerList(std::make_shared<mga::FloatSourceCrop>(), {}, offset));
         case mga::HwcVersion::unknown:
         default:
             BOOST_THROW_EXCEPTION(std::runtime_error("unknown or unsupported hwc version"));

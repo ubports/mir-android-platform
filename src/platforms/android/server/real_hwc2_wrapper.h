@@ -43,6 +43,14 @@ struct Hwc2Callbacks
     hwc2_compat_device_t* hwc2_device;
 };
 
+struct free_delete
+{
+    void operator()(void* x) { free(x); }
+};
+
+typedef std::unique_ptr<hwc2_compat_display_t, free_delete> hwc2_compat_display_ptr;
+typedef std::unique_ptr<HWC2DisplayConfig, free_delete> HWC2DisplayConfig_ptr;
+
 class RealHwc2Wrapper : public HwcWrapper
 {
 public:
@@ -79,7 +87,6 @@ public:
 
     static int composerSequenceId;
 private:
-    //std::shared_ptr<hwc_composer_device_1> const hwc_device;
     hwc2_compat_device_t* hwc2_device;
     std::shared_ptr<HwcReport> const report;
     std::mutex callback_map_lock;
@@ -91,6 +98,7 @@ private:
     };
     std::unordered_map<void const*, Callbacks> callback_map;
     std::atomic<bool> is_plugged[HWC_NUM_DISPLAY_TYPES];
+    std::unordered_map<int, std::pair<hwc2_compat_display_ptr, std::vector<hwc2_compat_layer_t*>>> display_contents;
 };
 
 }
