@@ -337,6 +337,9 @@ mir::UniqueModulePtr<mir::graphics::RenderingPlatform> create_rendering_platform
 void add_graphics_platform_options(
     boost::program_options::options_description& config)
 {
+    // Check if the options alredy has been added, if so ignore and move on
+    if (config.find_nothrow(hwc_log_opt, false))
+       return;
     mir::assert_entry_point_signature<mg::AddPlatformOptions>(&add_graphics_platform_options);
     config.add_options()
         (hwc_log_opt,
