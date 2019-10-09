@@ -57,7 +57,17 @@ char const* const log_opt_value = "log";
 char const* const off_opt_value = "off";
 char const* const fb_native_window_report_opt = "report-fb-native-window";
 
+bool force_caf_version() {
+    char value[PROP_VALUE_MAX] = "";
+    return 0 != ::property_get("ro.build.qti_bsp.abi", value, nullptr);
+}
+
 #ifdef ANDROID_CAF
+bool force_vanilla_version() {
+    char value[PROP_VALUE_MAX] = "";
+    return 0 != ::property_get("ro.build.vanilla.abi", value, nullptr);
+}
+
 std::tuple<int, int, int> get_android_version()
 {
     char value[PROP_VALUE_MAX] = "";
@@ -353,11 +363,16 @@ mg::PlatformPriority probe_graphics_platform(std::shared_ptr<mir::ConsoleService
 
 #ifdef ANDROID_CAF
     // LAZY HACK to check for qcom hardware
+    if (force_vanilla_version())
+	return mg::PlatformPriority::unsupported;
     auto version = get_android_version();
-    if (strcmp(hw_module->author, "CodeAurora Forum") == 0 && std::get<0>(version) >= 7)
+    if (force_caf_version() ||
+        (strcmp(hw_module->author, "CodeAurora Forum") == 0 && std::get<0>(version) >= 7))
         return static_cast<mg::PlatformPriority>(mg::PlatformPriority::best + 1);
     return mg::PlatformPriority::unsupported;
 #else
+    if (force_caf_version())
+	return mg::PlatformPriority::unsupported;
     return mg::PlatformPriority::best;
 #endif
 }
