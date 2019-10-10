@@ -98,6 +98,8 @@ int mga::ServerRenderWindow::driver_requests_info(int key) const
             return NATIVE_WINDOW_FRAMEBUFFER;
         case NATIVE_WINDOW_CONSUMER_USAGE_BITS:
             return GRALLOC_USAGE_HW_RENDER | GRALLOC_USAGE_HW_COMPOSER | GRALLOC_USAGE_HW_FB;
+        case NATIVE_WINDOW_DEFAULT_DATASPACE:
+            return HAL_DATASPACE_UNKNOWN;
         case NATIVE_WINDOW_BUFFER_AGE:
             // 0 is a safe fallback since no buffer tracking is in place
             return 0;
