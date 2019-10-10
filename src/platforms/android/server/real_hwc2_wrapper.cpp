@@ -18,10 +18,10 @@
 
 #include "mir/graphics/frame.h"
 #include "real_hwc2_wrapper.h"
-#include "buffer.h"
-#include "native_buffer.h"
-#include "hwc_report.h"
 #include "hwc_layerlist.h"
+#include "native_buffer.h"
+#include "buffer.h"
+#include "hwc_report.h"
 #include "display_device_exceptions.h"
 #include <boost/throw_exception.hpp>
 #include <stdexcept>
@@ -244,7 +244,7 @@ void mga::RealHwc2Wrapper::set(
 
     assert(contents.size() == 1); // No multiple displays support that far
 
-    std::shared_ptr<Buffer> buffer = nullptr;
+    std::shared_ptr<mg::Buffer> buffer = nullptr;
     for (auto& it : contents.front().list) {
         assert(buffer == nullptr); // There should be only a single layer with buffer
         buffer = it.layer.buffer();
