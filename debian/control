@@ -18,6 +18,7 @@ Build-Depends: cmake,
                android-headers-27,
                libhardware-dev [i386 amd64 armhf arm64],
                libandroid-properties-dev [i386 amd64 armhf arm64],
+               libhybris-dev,
                libgtest-dev,
                google-mock (>= 1.6.0+svn437),
 # only enable valgrind once it's been tested to work on each architecture:
