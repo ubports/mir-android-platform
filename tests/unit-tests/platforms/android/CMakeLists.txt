@@ -45,7 +45,7 @@ target_link_libraries(
   ${GMOCK_MAIN_LIBRARY}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   ${LIBHARDWARE_LDFLAGS} ${LIBHARDWARE_LIBRARIES}
-  -lhwc2 -lgralloc -lhybris-eglplatformcommon
+  -lhwc2 -lgralloc -lhybris-eglplatformcommon -lsync
   ${ANDROID_PROPERTIES_LDFLAGS} ${ANDROID_PROPERTIES_LIBRARIES}
   dl
 )
