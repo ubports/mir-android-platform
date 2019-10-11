@@ -137,7 +137,7 @@ Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          mir-platform-graphics-android-caf15,
-         mir-client-platform-android5,
+         mir-client-platform-android-caf5,
          mir-platform-input-evdev7,
 Description: Display server for Ubuntu - android (caf) driver metapackage
  Mir is a display server running on linux systems, with a focus on efficiency,
