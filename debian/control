@@ -136,7 +136,7 @@ Architecture: i386 amd64 armhf arm64
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
-         mir-platform-graphics-android15,
+         mir-platform-graphics-android-caf15,
          mir-client-platform-android5,
          mir-platform-input-evdev7,
 Description: Display server for Ubuntu - android (caf) driver metapackage
