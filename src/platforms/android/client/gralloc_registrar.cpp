@@ -43,11 +43,6 @@ struct NativeHandleDeleter
     void operator()(const native_handle_t* t)
     {
         hybris_gralloc_release(t, 0/*was_allocated*/);
-        for (auto i = 0; i < t->numFds; i++)
-        {
-            close(t->data[i]);
-        }
-        ::operator delete(const_cast<native_handle_t*>(t));
     }
 };
 
