@@ -34,6 +34,9 @@
 #include <stdexcept>
 #include <vector>
 
+#define MIR_LOG_COMPONENT "android/server"
+#include "mir/log.h"
+
 namespace mg = mir::graphics;
 namespace mga=mir::graphics::android;
 
@@ -61,17 +64,21 @@ mga::ResourceFactory::create_hwc_wrapper(std::shared_ptr<mga::HwcReport> const& 
     //TODO: could probably be collapsed further into HwcWrapper's constructor
     hw_device_t *hwc_device_raw = nullptr;
     hw_module_t const *module;
+    auto hwc_version = HWC_MODULE_API_VERSION_0_1;
     int rc = hw_get_module(HWC_HARDWARE_MODULE_ID, &module);
-    if ((rc != 0) || (module == nullptr) ||
-       (!module->methods) || !(module->methods->open) ||
-       module->methods->open(module, HWC_HARDWARE_COMPOSER, &hwc_device_raw) ||
-       (hwc_device_raw == nullptr))
+
+    if ((rc != 0) && module && module->methods && module->methods->open &&
+        module->methods->open(module, HWC_HARDWARE_COMPOSER, &hwc_device_raw) &&
+        hwc_device_raw)
     {
-        BOOST_THROW_EXCEPTION(std::runtime_error("error opening hwc hal"));
+        hwc_version = hwc_device_raw->version;
+    } else {
+        mir::log_info("Error opening HWC HAL. Assuming HWComposer 2 device with libhwc2_compat_layer.");
+        hwc_version = HWC_DEVICE_API_VERSION_2_0;
     }
 
     auto version = mga::HwcVersion::hwc10;
-    switch(hwc_device_raw->version)
+    switch(hwc_version)
     {
         case HWC_DEVICE_API_VERSION_1_0: version = mga::HwcVersion::hwc10; break;
         case HWC_DEVICE_API_VERSION_1_1: version = mga::HwcVersion::hwc11; break;
