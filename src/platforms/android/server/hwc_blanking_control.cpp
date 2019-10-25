@@ -293,7 +293,13 @@ void mga::HwcPowerModeControl::power_mode(DisplayName display_name, MirPowerMode
         default:
             BOOST_THROW_EXCEPTION(std::logic_error("Invalid power mode"));
     }
+    if (mode_request != mir_power_mode_on) {
+        hwc_device->vsync_signal_off(display_name);
+    }
     hwc_device->power_mode(display_name, mode);
+    if (mode_request == mir_power_mode_on) {
+        hwc_device->vsync_signal_on(display_name);
+    }
 }
 
 mg::DisplayConfigurationOutput mga::HwcPowerModeControl::active_config_for(DisplayName display_name)

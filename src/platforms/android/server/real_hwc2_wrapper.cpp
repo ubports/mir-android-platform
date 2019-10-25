@@ -285,23 +285,29 @@ void mga::RealHwc2Wrapper::set(
 
 void mga::RealHwc2Wrapper::vsync_signal_on(DisplayName display_name) const
 {
-    // if (auto rc = hwc_device->eventControl(hwc_device.get(), as_hwc_display(display_name), HWC_EVENT_VSYNC, 1))
-    // {
-    //     std::stringstream ss;
-    //     ss << "error turning vsync signal on. rc = " << std::hex << rc;
-    //     BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
-    // }
+    int display_id = 0;
+
+    auto it = display_contents.find(display_id);
+    if (it == display_contents.end()) {
+        display_contents.emplace(display_id, std::make_pair(
+            mga::hwc2_compat_display_ptr{hwc2_compat_device_get_display_by_id(hwc2_device,
+                as_hwc_display(mga::DisplayName::primary))},
+            std::vector<hwc2_compat_layer_t*>{}));
+
+        it = display_contents.find(display_id);
+    }
+    auto& display_pair = it->second;
+
+    auto hwc2_display = display_pair.first.get();
+    hwc2_compat_display_set_vsync_enabled(hwc2_display, HWC2_VSYNC_ENABLE);
     report->report_vsync_on();
 }
 
 void mga::RealHwc2Wrapper::vsync_signal_off(DisplayName display_name) const
 {
-    // if (auto rc = hwc_device->eventControl(hwc_device.get(), as_hwc_display(display_name), HWC_EVENT_VSYNC, 0))
-    // {
-    //     std::stringstream ss;
-    //     ss << "error turning vsync signal off. rc = " << std::hex << rc;
-    //     BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
-    // }
+    int display_id = 0;
+    auto hwc2_display = display_contents[display_id].first.get();
+    hwc2_compat_display_set_vsync_enabled(hwc2_display, HWC2_VSYNC_DISABLE);
     report->report_vsync_off();
 }
 
