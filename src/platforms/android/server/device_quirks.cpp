@@ -66,7 +66,8 @@ unsigned int num_framebuffers_for(std::string const& device_name, bool quirk_ena
     if (quirk_enabled && device_name == "mx3")
         return 3;
     else
-        return 2;
+	// FIXME: return 2 by default once we can detect HWC2 devices which need 3
+        return 3;
 }
 
 bool gralloc_cannot_be_closed_safely_for(std::string const& device_name, bool quirk_enabled)
