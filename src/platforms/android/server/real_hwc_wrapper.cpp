@@ -25,6 +25,9 @@
 #include <sstream>
 #include <algorithm>
 
+#define MIR_LOG_COMPONENT "android/server"
+#include "mir/log.h"
+
 namespace mg = mir::graphics;
 namespace mga=mir::graphics::android;
 
@@ -135,18 +138,13 @@ void mga::RealHwcWrapper::set(
     if (auto rc = hwc_device->set(hwc_device.get(), num_displays,
         const_cast<hwc_display_contents_1**>(displays.data())))
     {
-        std::stringstream ss;
-        ss << "error during hwc set(). rc = " << std::hex << rc;
-
-        if (num_displays > 1)
-        {
-            if (!display_connected(DisplayName::external))
-                BOOST_THROW_EXCEPTION(mga::DisplayDisconnectedException(ss.str()));
-            else
-                BOOST_THROW_EXCEPTION(mga::ExternalDisplayError(ss.str()));
-        }
-
-        BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
+        // mariogrip:
+        // Based on what surfaceflinger does, We should simply ignore errors that set returns
+        // I see no reason why we should throw when set fails, as we already do hwc->perpare 
+        // that will throw in case of a invalid state. In this case it seem to be a normal 
+        // behavior to ignore as we can't check if the overlay is valid before committing.
+        // See: https://android.googlesource.com/platform/frameworks/native/+/android-7.1.1_r28/services/surfaceflinger/SurfaceFlinger_hwc1.cpp#1314
+        mir::log_warning("error during hwc set(). rc = %d", rc);
     }
     report->report_set_done(displays);
 }
