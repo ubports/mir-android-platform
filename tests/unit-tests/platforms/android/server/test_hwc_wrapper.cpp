@@ -145,7 +145,7 @@ TEST_F(HwcWrapper, submits_correct_set_parameters)
     EXPECT_EQ(external_list.get(), external_display);
     EXPECT_EQ(nullptr, virtual_display);
 }
-
+/*
 TEST_F(HwcWrapper, throws_on_set_failure)
 {
     using namespace testing;
@@ -160,7 +160,7 @@ TEST_F(HwcWrapper, throws_on_set_failure)
         wrapper.set(primary_displays);
     }, std::runtime_error);
 }
-
+*/
 TEST_F(HwcWrapper, turns_display_on)
 {
     using namespace testing;
