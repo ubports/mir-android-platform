@@ -91,14 +91,9 @@ TEST(DisplayGroup, group_ignores_throws_during_hotplug)
     NiceMock<mtd::MockDisplayDevice> mock_device;
     mga::DisplayGroup group(mt::fake_shared(mock_device), std::make_unique<StubConfigurableDB>());
     EXPECT_CALL(mock_device, commit(_))
-        .WillOnce(Throw(mga::DisplayDisconnectedException("")))
-        .WillOnce(Throw(std::runtime_error("")));
+        .WillOnce(Throw(mga::DisplayDisconnectedException("")));
 
     EXPECT_NO_THROW({group.post();});
-
-    EXPECT_THROW({
-        group.post();
-    }, std::runtime_error);
 }
 
 TEST(DisplayGroup, calls_error_handler_on_external_display_error)
@@ -114,4 +109,34 @@ TEST(DisplayGroup, calls_error_handler_on_external_display_error)
 
     EXPECT_NO_THROW({group.post();});
     EXPECT_TRUE(error_handler_called);
+}
+
+TEST(DisplayGroup, single_throw_is_not_fatal)
+{
+    using namespace testing;
+    NiceMock<mtd::MockDisplayDevice> mock_device;
+    mga::DisplayGroup group(mt::fake_shared(mock_device), std::make_unique<StubConfigurableDB>());
+    EXPECT_CALL(mock_device, commit(_))
+        .WillOnce(Throw(std::runtime_error("error for testing")));
+
+    EXPECT_NO_THROW({group.post();});
+}
+
+// Keep in sync with display_group.cpp
+#define MAX_CONSECUTIVE_COMMIT_FAILURE 3
+
+TEST(DisplayGroup, multiple_throws_are_fatal)
+{
+    using namespace testing;
+    NiceMock<mtd::MockDisplayDevice> mock_device;
+    mga::DisplayGroup group(mt::fake_shared(mock_device), std::make_unique<StubConfigurableDB>());
+    EXPECT_CALL(mock_device, commit(_))
+        .WillRepeatedly(Throw(std::runtime_error("error for testing")));
+
+    for (int i=0; i < MAX_CONSECUTIVE_COMMIT_FAILURE; i++)
+        EXPECT_NO_THROW({group.post();});
+
+    EXPECT_THROW({
+        group.post();
+    }, std::runtime_error);
 }

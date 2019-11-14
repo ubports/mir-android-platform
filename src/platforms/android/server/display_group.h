@@ -62,6 +62,7 @@ private:
     std::shared_ptr<DisplayDevice> const device;
     std::map<DisplayName, std::unique_ptr<ConfigurableDisplayBuffer>> dbs;
     ExceptionHandler const exception_handler;
+    int commit_failure_count;
 };
 
 }

@@ -22,6 +22,11 @@
 #include <boost/throw_exception.hpp>
 #include <stdexcept>
 
+#define MIR_LOG_COMPONENT "android/server"
+#include "mir/log.h"
+
+#define MAX_CONSECUTIVE_COMMIT_FAILURE 3
+
 namespace mg = mir::graphics;
 namespace mga = mir::graphics::android;
 namespace geom = mir::geometry;
@@ -31,7 +36,8 @@ mga::DisplayGroup::DisplayGroup(
     std::unique_ptr<mga::ConfigurableDisplayBuffer> primary_buffer,
     ExceptionHandler const& exception_handler) :
     device(device),
-    exception_handler(exception_handler)
+    exception_handler(exception_handler),
+    commit_failure_count(0)
 {
     dbs.emplace(std::make_pair(mga::DisplayName::primary, std::move(primary_buffer)));
 }
@@ -95,17 +101,29 @@ void mga::DisplayGroup::post()
     try
     {
         device->commit(contents);
+        commit_failure_count = 0;
     }
     catch (mga::DisplayDisconnectedException const&)
     {
         //Ignore disconnect errors as they are not fatal
+        commit_failure_count = 0;
     }
-    catch (mga::ExternalDisplayError const&)
+    catch (std::runtime_error const& e)
     {
-        //NOTE: We allow Display to inject an error handler (which can then attempt to recover
-        // from this error) as post is called directly by the compositor and we don't want to propagate
-        // handling of android platform specific exceptions in mir core.
-        exception_handler();
+        // Falure to commit() can be transient. We allow commit() to fail
+        // 3 times consecutively before declaring it fatal.
+        commit_failure_count++;
+        if (commit_failure_count > MAX_CONSECUTIVE_COMMIT_FAILURE) {
+            mir::log_error("Commiting has failed %d times consecutively.", commit_failure_count);
+            BOOST_THROW_EXCEPTION(e);
+        } else {
+            mir::log_warning("Commiting has failed %d time(s) consecutively.", commit_failure_count);
+            mir::log_warning("The lastest error is: %s", e.what());
+
+            // We allow Display to inject an error handler (which can then attempt to recover
+            // from this error) to try to prevent the error from happening in the future.
+            exception_handler();
+        }
     }
 
 }
