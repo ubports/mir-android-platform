@@ -348,20 +348,19 @@ bool mga::Display::apply_if_configuration_preserves_display_buffers(
     /*
      * We never invalidate display buffers based on the configuration to apply.
      *
-     * The only way we invalidate a display buffer is if we detect that a previously-connected
-     * external display has been removed. In that case, regardless of whether or not it's enabled
-     * in the configuration, we destroy the display.
+     * The only way we invalidate a display buffer is if we detect that a display has
+     * been connected or disconnected
      *
      * Take the configuration lock to ensure consistency between our checking for external
      * connections and configure's checking.
      */
     std::lock_guard<decltype(configuration_mutex)> lock{configuration_mutex};
-    if (!config.external().connected || displays.display_present(mga::DisplayName::external))
-    {
-        configure_locked(conf, lock);
-        return true;
-    }
-    return false;
+    if ((!config.external().connected && displays.display_present(mga::DisplayName::external)) ||
+       (config.external().connected && !displays.display_present(mga::DisplayName::external)))
+        return false;
+
+    configure_locked(conf, lock);
+    return true;
 }
 
 void mga::Display::configure_locked(
