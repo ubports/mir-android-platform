@@ -1165,3 +1165,54 @@ TEST_F(Display, does_not_invalidate_display_buffers_when_it_promised_not_to)
         EXPECT_THAT(db->transformation(), AnyOf(Eq(rotate_inverted), Eq(rotate_none)));
     }
 }
+
+TEST_F(Display, does_invalidate_display_buffers_when_it_promised_to)
+{
+    using namespace testing;
+    std::function<void()> hotplug_fn = []{};
+    bool external_connected = false;
+    stub_db_factory->with_next_config([&](mtd::MockHwcConfiguration& mock_config)
+    {
+        ON_CALL(mock_config, active_config_for(mga::DisplayName::primary))
+            .WillByDefault(Return(mtd::StubDisplayConfigurationOutput{
+                primary_output_id, {20,20}, {4,4}, mir_pixel_format_abgr_8888, 50.0f, true}));
+        ON_CALL(mock_config, active_config_for(mga::DisplayName::external))
+            .WillByDefault(Invoke([&](mga::DisplayName)
+            {
+                return mtd::StubDisplayConfigurationOutput{external_output_id,
+                    {20,20}, {4,4}, mir_pixel_format_abgr_8888, 50.0f, external_connected};
+            }));
+        EXPECT_CALL(mock_config, subscribe_to_config_changes(_,_))
+            .WillOnce(DoAll(SaveArg<0>(&hotplug_fn), Return(std::make_shared<char>('2'))));
+    });
+
+    mga::Display display(
+        stub_db_factory,
+        stub_gl_program_factory,
+        stub_gl_config,
+        null_display_report,
+        null_anw_report,
+        mga::OverlayOptimization::enabled);
+
+
+    auto config = display.configuration();
+
+    // At this point we should NOT
+    EXPECT_TRUE(display.apply_if_configuration_preserves_display_buffers(*config));
+
+    //hotplug external display
+    external_connected = true;
+    hotplug_fn();
+    config = display.configuration();
+
+    EXPECT_FALSE(display.apply_if_configuration_preserves_display_buffers(*config));
+    display.configure(*config);
+
+    //hotplug external display away
+    external_connected = false;
+    hotplug_fn();
+    config = display.configuration();
+
+    EXPECT_FALSE(display.apply_if_configuration_preserves_display_buffers(*config));
+    display.configure(*config);
+}
