@@ -356,7 +356,9 @@ bool mga::Display::apply_if_configuration_preserves_display_buffers(
      */
     std::lock_guard<decltype(configuration_mutex)> lock{configuration_mutex};
     if ((!config.external().connected && displays.display_present(mga::DisplayName::external)) ||
-       (config.external().connected && !displays.display_present(mga::DisplayName::external)))
+       (config.external().connected && !displays.display_present(mga::DisplayName::external)) ||
+       (!config.virt().connected && displays.display_present(mga::DisplayName::virt)) ||
+       (config.virt().connected && !displays.display_present(mga::DisplayName::virt)))
         return false;
 
     configure_locked(conf, lock);

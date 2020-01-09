@@ -1140,6 +1140,10 @@ TEST_F(Display, does_not_invalidate_display_buffers_when_it_promised_not_to)
     ASSERT_THAT(virtual_output, NotNull());
     virtual_output->enable();
 
+    // Configure virtual display before we change anything else
+    // If we do not, it will think it's a display change
+    display.configure(*display.configuration());
+
     // We should be able to do everything except disable an external output.
     auto config = display.configuration();
     config->for_each_output(
