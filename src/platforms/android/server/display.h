@@ -105,6 +105,7 @@ private:
     std::unique_ptr<HwcConfiguration> const hwc_config;
     ConfigChangeSubscription const hotplug_subscription;
     DisplayConfiguration mutable config;
+    DisplayOutputConnections old_outputs;
     PbufferGLContext gl_context;
     std::shared_ptr<DisplayDevice> display_device;
     std::unique_ptr<DisplayChangePipe> display_change_pipe;

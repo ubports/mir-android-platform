@@ -42,6 +42,9 @@
 
 #include "mir/geometry/dimensions.h"
 
+#define MIR_LOG_COMPONENT "android-display"
+#include <mir/log.h>
+
 namespace mga=mir::graphics::android;
 namespace mgl=mir::gl;
 namespace mg=mir::graphics;
@@ -160,6 +163,7 @@ mga::Display::Display(
         mir_power_mode_off,
         hwc_config->active_config_for(mga::DisplayName::external),
         mir_power_mode_off),
+    old_outputs(config.output_connections()),
     gl_context{config.primary().current_format, *gl_config, *display_report},
     display_device(display_buffer_builder->create_display_device()),
     display_change_pipe(new DisplayChangePipe),
@@ -355,14 +359,14 @@ bool mga::Display::apply_if_configuration_preserves_display_buffers(
      * connections and configure's checking.
      */
     std::lock_guard<decltype(configuration_mutex)> lock{configuration_mutex};
-    if ((!config.external().connected && displays.display_present(mga::DisplayName::external)) ||
-       (config.external().connected && !displays.display_present(mga::DisplayName::external)) ||
-       (!config.virt().connected && displays.display_present(mga::DisplayName::virt)) ||
-       (config.virt().connected && !displays.display_present(mga::DisplayName::virt)))
-        return false;
+    if (config.output_connections() == old_outputs) {
+        mir::log_info("does not invalidate display buffers");
+        configure_locked(conf, lock);
+        return true;
+    }
 
-    configure_locked(conf, lock);
-    return true;
+	mir::log_info("invalidate display buffers");
+    return false;
 }
 
 void mga::Display::configure_locked(
@@ -412,4 +416,5 @@ void mga::Display::configure_locked(
                 displays.configure(mga::DisplayName::external, output.power_mode, transform, output.extents());
             }
         });
+    old_outputs = config.output_connections();
 }

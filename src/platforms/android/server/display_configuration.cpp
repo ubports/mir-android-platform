@@ -256,6 +256,17 @@ mg::DisplayConfigurationOutput& mga::DisplayConfiguration::operator[](mg::Displa
     return configurations[id];
 }
 
+const mga::DisplayOutputConnections mga::DisplayConfiguration::output_connections()
+{
+    return DisplayOutputConnections{primary().connected,
+                                    external().connected,
+#ifdef ANDROID_CAF
+                                    tertiary().connected,
+#endif
+                                    virt().connected};
+}
+
+
 void mga::DisplayConfiguration::set_virtual_output_to(int width, int height)
 {
     auto& virt_config = virt();
