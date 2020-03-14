@@ -362,7 +362,8 @@ mg::PlatformPriority probe_graphics_platform(std::shared_ptr<mir::ConsoleService
     hw_module_t const* hw_module;
 
     err = hw_get_module(HWC_HARDWARE_MODULE_ID, &hw_module);
-    if (err < 0) return mg::PlatformPriority::unsupported;
+    // Hack for Treble HWComposer 2 devices where loading HAL fails
+    if (err < 0) return mg::PlatformPriority::best;
 
 #ifdef ANDROID_CAF
     // LAZY HACK to check for qcom hardware
