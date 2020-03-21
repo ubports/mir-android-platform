@@ -267,9 +267,9 @@ void mga::RealHwc2Wrapper::set(
     int presentFence = -1;
 
     if (auto rc = hwc2_compat_display_present(hwc2_display, &presentFence)) {
-        std::stringstream ss;
-        ss << "error during hwc set(). rc = " << std::hex << rc;
-        BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
+        // Do not throw an exception in this case as it occasionaly fails on
+        // some devices (found on lavender) but next try will likely succeed.
+        mir::log_warning("error during hwc set(). rc = %d", rc);
     }
     fblayer.releaseFenceFd = presentFence;
 
