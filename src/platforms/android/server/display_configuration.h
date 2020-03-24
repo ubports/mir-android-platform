@@ -28,6 +28,26 @@ namespace graphics
 namespace android
 {
 
+struct DisplayOutputConnections
+{
+    bool primary;
+    bool external;
+    bool virt;
+#ifdef ANDROID_CAF
+    bool tertiary;
+#endif
+
+    bool operator==(const DisplayOutputConnections& other) const
+    {
+        return primary == other.primary &&
+               external == other.external &&
+#ifdef ANDROID_CAF
+               tertiary == other.tertiary &&
+#endif
+               virt == other.virt;
+    }
+};
+
 class DisplayConfiguration : public graphics::DisplayConfiguration
 {
 public:
@@ -70,6 +90,8 @@ public:
 #endif
     DisplayConfigurationOutput& virt();
     DisplayConfigurationOutput& operator[](DisplayConfigurationOutputId const&);
+
+    const DisplayOutputConnections output_connections();
 
     void set_virtual_output_to(int width, int height);
     void disable_virtual_output();

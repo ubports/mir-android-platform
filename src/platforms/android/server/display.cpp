@@ -42,6 +42,9 @@
 
 #include "mir/geometry/dimensions.h"
 
+#define MIR_LOG_COMPONENT "android-display"
+#include <mir/log.h>
+
 namespace mga=mir::graphics::android;
 namespace mgl=mir::gl;
 namespace mg=mir::graphics;
@@ -160,6 +163,7 @@ mga::Display::Display(
         mir_power_mode_off,
         hwc_config->active_config_for(mga::DisplayName::external),
         mir_power_mode_off),
+    old_outputs(config.output_connections()),
     gl_context{config.primary().current_format, *gl_config, *display_report},
     display_device(display_buffer_builder->create_display_device()),
     display_change_pipe(new DisplayChangePipe),
@@ -348,19 +352,20 @@ bool mga::Display::apply_if_configuration_preserves_display_buffers(
     /*
      * We never invalidate display buffers based on the configuration to apply.
      *
-     * The only way we invalidate a display buffer is if we detect that a previously-connected
-     * external display has been removed. In that case, regardless of whether or not it's enabled
-     * in the configuration, we destroy the display.
+     * The only way we invalidate a display buffer is if we detect that a display has
+     * been connected or disconnected
      *
      * Take the configuration lock to ensure consistency between our checking for external
      * connections and configure's checking.
      */
     std::lock_guard<decltype(configuration_mutex)> lock{configuration_mutex};
-    if (!config.external().connected || displays.display_present(mga::DisplayName::external))
-    {
+    if (config.output_connections() == old_outputs) {
+        mir::log_info("does not invalidate display buffers");
         configure_locked(conf, lock);
         return true;
     }
+
+	mir::log_info("invalidate display buffers");
     return false;
 }
 
@@ -411,4 +416,5 @@ void mga::Display::configure_locked(
                 displays.configure(mga::DisplayName::external, output.power_mode, transform, output.extents());
             }
         });
+    old_outputs = config.output_connections();
 }
