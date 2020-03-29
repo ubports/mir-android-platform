@@ -102,10 +102,11 @@ static void hotplug_hook(HWC2EventListener* listener, int32_t sequenceId,
 static mga::Hwc2Callbacks hwc_callbacks{{vsync_hook, hotplug_hook, refresh_hook}, nullptr, nullptr};
 
 static mga::HWC2DisplayConfig_ptr get_active_config(
-    hwc2_compat_device_t* hwc2_device, mga::DisplayName display_name)
+    hwc2_compat_device_t* hwc2_device,
+    std::unordered_map<int, mga::hwc2_compat_display_ptr> const &hwc2_displays,
+    mga::DisplayName display_name)
 {
-    auto hwc2_display = mga::hwc2_compat_display_ptr(
-        hwc2_compat_device_get_display_by_id(hwc2_device, as_hwc_display(display_name)));
+    auto &hwc2_display = hwc2_displays[as_hwc_display(display_name)];
     if (!hwc2_display) {
         std::stringstream ss;
         ss << "Attempted to get active configuration for unconnected display: " << as_hwc_display(display_name);
@@ -144,8 +145,10 @@ mga::RealHwc2Wrapper::RealHwc2Wrapper(
 
     for (int i = 0; i < 5 * 1000; ++i) {
         // Wait at most 5s for hotplug events
-        if (auto hwc2_primary_display = hwc2_compat_device_get_display_by_id(hwc2_device, 0))
+        if (auto hwc2_primary_display = hwc2_compat_device_get_display_by_id(hwc2_device, 0)) {
+            hwc2_displays.emplace(0, hwc2_compat_display_ptr{hwc2_primary_display});
             break;
+        }
         usleep(1000);
     }
 }
@@ -160,25 +163,20 @@ void mga::RealHwc2Wrapper::prepare(
     std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& hwc1_displays) const
 {
     report->report_list_submitted_to_prepare(hwc1_displays);
-    for (int i = 0; i < num_displays(hwc1_displays); i++) {
-        auto hwc1_display = hwc1_displays[i];
-        if (i == 0) { // primary display
-            auto it = display_contents.find(i);
+    for (int display_id = 0; display_id < num_displays(hwc1_displays); display_id++) {
+        auto hwc1_display = hwc1_displays[display_id];
+        if (display_id == 0) { // primary display
+            auto it = display_contents.find(display_id);
 
             if (it == display_contents.end()) {
-                display_contents.emplace(i, std::make_pair(
-                    mga::hwc2_compat_display_ptr{hwc2_compat_device_get_display_by_id(hwc2_device,
-                        as_hwc_display(mga::DisplayName::primary))},
-                    std::vector<hwc2_compat_layer_t*>{}));
-
-                it = display_contents.find(i);
+                it = display_contents.emplace(display_id, std::vector<hwc2_compat_layer_t*>{}).first;
             }
 
-            auto& display_pair = it->second;
-            auto& layers = display_pair.second;
+            auto hwc2_display = hwc2_displays[display_id].get();
+            auto& layers = it->second;
 
             if (hwc1_display->numHwLayers && layers.size() < 1) {
-                auto layer = hwc2_compat_display_create_layer(display_pair.first.get());
+                auto layer = hwc2_compat_display_create_layer(hwc2_display);
                 layers.push_back(layer);
 
                 auto width = hwc1_display->hwLayers[0].displayFrame.right;
@@ -196,7 +194,7 @@ void mga::RealHwc2Wrapper::prepare(
     uint32_t num_types = 0;
     uint32_t num_requests = 0;
     int display_id = 0;
-    auto hwc2_display = display_contents[display_id].first.get();
+    auto hwc2_display = hwc2_displays[display_id].get();
 
     auto error = hwc2_compat_display_validate(hwc2_display, &num_types, &num_requests);
 
@@ -237,7 +235,7 @@ void mga::RealHwc2Wrapper::set(
     report->report_set_list(hwc1_displays);
 
     int display_id = 0;
-    auto hwc2_display = display_contents[display_id].first.get();
+    auto hwc2_display = hwc2_displays[display_id].get();
     auto& fblayer = hwc1_displays[0]->hwLayers[1];
     static int last_present_fence = -1;
     bool sync_before_set = true;
@@ -285,51 +283,26 @@ void mga::RealHwc2Wrapper::set(
 
 void mga::RealHwc2Wrapper::vsync_signal_on(DisplayName display_name) const
 {
-    int display_id = 0;
-
-    auto it = display_contents.find(display_id);
-    if (it == display_contents.end()) {
-        display_contents.emplace(display_id, std::make_pair(
-            mga::hwc2_compat_display_ptr{hwc2_compat_device_get_display_by_id(hwc2_device,
-                as_hwc_display(mga::DisplayName::primary))},
-            std::vector<hwc2_compat_layer_t*>{}));
-
-        it = display_contents.find(display_id);
-    }
-    auto& display_pair = it->second;
-
-    auto hwc2_display = display_pair.first.get();
+    auto hwc2_display = hwc2_displays[as_hwc_display(mga::DisplayName::primary)].get();
     hwc2_compat_display_set_vsync_enabled(hwc2_display, HWC2_VSYNC_ENABLE);
     report->report_vsync_on();
 }
 
 void mga::RealHwc2Wrapper::vsync_signal_off(DisplayName display_name) const
 {
-    int display_id = 0;
-    auto hwc2_display = display_contents[display_id].first.get();
+    auto hwc2_display = hwc2_displays[as_hwc_display(mga::DisplayName::primary)].get();
     hwc2_compat_display_set_vsync_enabled(hwc2_display, HWC2_VSYNC_DISABLE);
     report->report_vsync_off();
 }
 
 void mga::RealHwc2Wrapper::display_on(DisplayName display_name) const
 {
-    // if (auto rc = hwc_device->blank(hwc_device.get(), as_hwc_display(display_name), 0))
-    // {
-    //     std::stringstream ss;
-    //     ss << "error turning display on. rc = " << std::hex << rc;
-    //     BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
-    // }
-    report->report_display_on();
+    BOOST_THROW_EXCEPTION(std::runtime_error("display_on() should not be used with HWC2 platform"));
 }
 
 void mga::RealHwc2Wrapper::display_off(DisplayName display_name) const
 {
-    // if (auto rc = hwc_device->blank(hwc_device.get(), as_hwc_display(display_name), 1))
-    // {
-    //     std::stringstream ss;
-    //     ss << "error turning display off. rc = " << std::hex << rc;
-    //     BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
-    // }
+    BOOST_THROW_EXCEPTION(std::runtime_error("display_off() should not be used with HWC2 platform"));
     report->report_display_off();
 }
 
@@ -423,7 +396,7 @@ std::vector<mga::ConfigId> mga::RealHwc2Wrapper::display_configs(DisplayName dis
 int mga::RealHwc2Wrapper::display_attributes(
     DisplayName display_name, ConfigId config_id, uint32_t const* attributes, int32_t* values) const
 {
-    auto config = get_active_config(hwc2_device, display_name);
+    auto config = get_active_config(hwc2_device, hwc2_displays, display_name);
     if (!config) {
         std::stringstream ss;
         ss << "No active configuration for display: " << as_hwc_display(display_name);
@@ -454,24 +427,39 @@ int mga::RealHwc2Wrapper::display_attributes(
 
 void mga::RealHwc2Wrapper::power_mode(DisplayName display_name, PowerMode mode) const
 {
-    // if (auto rc = hwc_device->setPowerMode(hwc_device.get(), as_hwc_display(display_name), static_cast<int>(mode)))
-    // {
-    //     std::stringstream ss;
-    //     ss << "error setting power mode. rc = " << std::hex << rc;
-    //     BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
-    // }
+    if (display_name == mga::DisplayName::primary) {
+        int display_id = 0;
+        auto hwc2_display = hwc2_displays[display_id].get();
+        auto hwc2_mode = HWC2_POWER_MODE_ON;
+
+        switch (mode) {
+            case PowerMode::off:
+                hwc2_mode = HWC2_POWER_MODE_OFF;
+                break;
+            case PowerMode::doze:
+                hwc2_mode = HWC2_POWER_MODE_DOZE;
+                break;
+            case PowerMode::doze_suspend:
+                hwc2_mode = HWC2_POWER_MODE_DOZE_SUSPEND;
+                break;
+        }
+
+        if (auto error = hwc2_compat_display_set_power_mode(hwc2_display, hwc2_mode)) {
+            mir::log_warning("error during hwc set(). rc = %d", static_cast<int>(error));
+        }
+    }
     report->report_power_mode(mode);
 }
 
 bool mga::RealHwc2Wrapper::has_active_config(DisplayName display_name) const
 {
-    auto config = get_active_config(hwc2_device, display_name);
+    auto config = get_active_config(hwc2_device, hwc2_displays, display_name);
     return config.get() != nullptr;
 }
 
 mga::ConfigId mga::RealHwc2Wrapper::active_config_for(DisplayName display_name) const
 {
-    auto config = get_active_config(hwc2_device, display_name);
+    auto config = get_active_config(hwc2_device, hwc2_displays, display_name);
     if (!config)
     {
         std::stringstream ss;

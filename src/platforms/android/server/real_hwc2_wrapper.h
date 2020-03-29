@@ -91,6 +91,7 @@ public:
     static int composerSequenceId;
 private:
     hwc2_compat_device_t* hwc2_device;
+    std::unordered_map<int, hwc2_compat_display_ptr> hwc2_displays;
     std::shared_ptr<HwcReport> const report;
     std::mutex callback_map_lock;
     struct Callbacks
@@ -101,7 +102,7 @@ private:
     };
     std::unordered_map<void const*, Callbacks> callback_map;
     std::atomic<bool> is_plugged[HWC_NUM_DISPLAY_TYPES];
-    std::unordered_map<int, std::pair<hwc2_compat_display_ptr, std::vector<hwc2_compat_layer_t*>>> display_contents;
+    std::unordered_map<int, std::vector<hwc2_compat_layer_t*>> display_contents;
 };
 
 }
