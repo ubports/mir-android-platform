@@ -89,6 +89,10 @@ public:
     {
         return 1;
     }
+    std::experimental::optional<geometry::Rectangle> clip_area() const override
+    {
+        return std::experimental::optional<geometry::Rectangle>();
+    }
 
 private:
     std::shared_ptr<graphics::Buffer> make_stub_buffer(geometry::Rectangle const& rect)

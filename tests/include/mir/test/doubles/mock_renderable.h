@@ -43,6 +43,8 @@ struct MockRenderable : public graphics::Renderable
             .WillByDefault(testing::Return(glm::mat4{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}));
         ON_CALL(*this, visible())
             .WillByDefault(testing::Return(true));
+        ON_CALL(*this, clip_area())
+            .WillByDefault(testing::Return(std::experimental::optional<geometry::Rectangle>()));
     }
 
     MOCK_CONST_METHOD0(id, ID());
@@ -53,6 +55,7 @@ struct MockRenderable : public graphics::Renderable
     MOCK_CONST_METHOD0(visible, bool());
     MOCK_CONST_METHOD0(shaped, bool());
     MOCK_CONST_METHOD0(swap_interval, unsigned int());
+    MOCK_CONST_METHOD0(clip_area, std::experimental::optional<geometry::Rectangle>());
 };
 }
 }
