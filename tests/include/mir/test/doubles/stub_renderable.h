@@ -21,6 +21,7 @@
 
 #include "mir/test/doubles/stub_buffer.h"
 #include <mir/graphics/renderable.h>
+#include <mir/version.h>
 #include <memory>
 #define GLM_FORCE_RADIANS
 #define GLM_PRECISION_MEDIUMP_FLOAT
@@ -89,6 +90,12 @@ public:
     {
         return 1;
     }
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(1, 5, 0)
+    std::experimental::optional<geometry::Rectangle> clip_area() const override
+    {
+        return std::experimental::optional<geometry::Rectangle>();
+    }
+#endif
 
 private:
     std::shared_ptr<graphics::Buffer> make_stub_buffer(geometry::Rectangle const& rect)

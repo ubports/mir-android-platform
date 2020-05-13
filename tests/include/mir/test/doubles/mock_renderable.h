@@ -21,6 +21,7 @@
 
 #include "mir/test/doubles/stub_buffer.h"
 #include <mir/graphics/renderable.h>
+#include <mir/version.h>
 #include <gmock/gmock.h>
 
 namespace mir
@@ -43,6 +44,10 @@ struct MockRenderable : public graphics::Renderable
             .WillByDefault(testing::Return(glm::mat4{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}));
         ON_CALL(*this, visible())
             .WillByDefault(testing::Return(true));
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(1, 5, 0)
+        ON_CALL(*this, clip_area())
+            .WillByDefault(testing::Return(std::experimental::optional<geometry::Rectangle>()));
+#endif
     }
 
     MOCK_CONST_METHOD0(id, ID());
@@ -53,6 +58,9 @@ struct MockRenderable : public graphics::Renderable
     MOCK_CONST_METHOD0(visible, bool());
     MOCK_CONST_METHOD0(shaped, bool());
     MOCK_CONST_METHOD0(swap_interval, unsigned int());
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(1, 5, 0)
+    MOCK_CONST_METHOD0(clip_area, std::experimental::optional<geometry::Rectangle>());
+#endif
 };
 }
 }
