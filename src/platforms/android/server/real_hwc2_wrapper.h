@@ -103,6 +103,8 @@ private:
     std::unordered_map<void const*, Callbacks> callback_map;
     std::atomic<bool> is_plugged[HWC_NUM_DISPLAY_TYPES];
     std::unordered_map<int, std::vector<hwc2_compat_layer_t*>> display_contents;
+    std::unordered_map<int, int> last_present_fence;
+    std::unordered_map<int, bool> active_displays;
 };
 
 }
