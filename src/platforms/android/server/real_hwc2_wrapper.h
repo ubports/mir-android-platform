@@ -83,7 +83,7 @@ public:
     void set_active_config(DisplayName name, ConfigId id) const override;
 
     void vsync(DisplayName, graphics::Frame::Timestamp) noexcept;
-    void hotplug(DisplayName, bool) noexcept;
+    void hotplug(hwc2_display_t, bool, bool) noexcept;
     void invalidate() noexcept;
 
     bool display_connected(DisplayName) const;
