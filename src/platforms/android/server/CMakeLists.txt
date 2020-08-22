@@ -18,7 +18,6 @@ if (MIR_BUILD_PLATFORM_ANDROID)
     hwc_fb_device.cpp
     hwc_loggers.cpp
     hwc_device.cpp
-    hwc2_device.cpp
     gralloc_module.cpp
     server_render_window.cpp
     resource_factory.cpp

@@ -19,6 +19,9 @@
 #include "mir/graphics/frame.h"
 #include "real_hwc_wrapper.h"
 #include "hwc_report.h"
+#include "hwc_layerlist.h"
+#include "display_device.h"
+#include "swapping_gl_context.h"
 #include "display_device_exceptions.h"
 #include <boost/throw_exception.hpp>
 #include <stdexcept>
@@ -57,6 +60,28 @@ mga::DisplayName display_name(int raw_name)
             return mga::DisplayName::virt;
     }
 }
+
+std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& to_display_contensts_list(
+     std::list<mga::DisplayContents> const& contents)
+ {
+#ifdef ANDROID_CAF
+    std::array<hwc_display_contents_1*, HWC_NUM_DISPLAY_TYPES> lists{{ nullptr, nullptr, nullptr, nullptr }};
+#else
+    std::array<hwc_display_contents_1*, HWC_NUM_DISPLAY_TYPES> lists{{ nullptr, nullptr, nullptr }};
+#endif
+
+    for (auto& content : contents)
+    {
+        if (content.name == mga::DisplayName::primary)
+            lists[HWC_DISPLAY_PRIMARY] = content.list.native_list();
+        else if (content.name == mga::DisplayName::external)
+            lists[HWC_DISPLAY_EXTERNAL] = content.list.native_list();
+
+        content.list.setup_fb(content.context.last_rendered_buffer());
+    }
+
+    return lists;
+ }
 
 //note: The destruction ordering of RealHwcWrapper should be enough to ensure that the
 //callbacks are not called after the hwc module is closed. However, some badly synchronized
@@ -116,8 +141,10 @@ mga::RealHwcWrapper::~RealHwcWrapper()
 }
 
 void mga::RealHwcWrapper::prepare(
-    std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& displays) const
+    std::list<mga::DisplayContents> const& contents) const
 {
+    auto displays = ::to_display_contensts_list(contents);
+
     report->report_list_submitted_to_prepare(displays);
     if (auto rc = hwc_device->prepare(hwc_device.get(), num_displays(displays),
         const_cast<hwc_display_contents_1**>(displays.data())))
@@ -131,8 +158,10 @@ void mga::RealHwcWrapper::prepare(
 }
 
 void mga::RealHwcWrapper::set(
-    std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& displays) const
+    std::list<mga::DisplayContents> const& contents) const
 {
+    auto displays = ::to_display_contensts_list(contents);
+
     report->report_set_list(displays);
     auto const num_displays = ::num_displays(displays);
     if (auto rc = hwc_device->set(hwc_device.get(), num_displays,

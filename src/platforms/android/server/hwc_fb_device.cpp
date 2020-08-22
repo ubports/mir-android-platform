@@ -66,17 +66,16 @@ void mga::HwcFbDevice::commit(std::list<DisplayContents> const& contents)
     auto& layer_list = primary_contents->list;
     auto& context = primary_contents->context;
 
-    layer_list.setup_fb(context.last_rendered_buffer());
-
     if (auto display_list = layer_list.native_list())
     {
-        hwc_wrapper->prepare({{display_list, nullptr, nullptr}});
+        std::list<DisplayContents> list = { *primary_contents };
+        hwc_wrapper->prepare(list);
         display_list->dpy = eglGetCurrentDisplay();
         display_list->sur = eglGetCurrentSurface(EGL_DRAW);
 
         //set() may affect EGL state by calling eglSwapBuffers.
         //HWC 1.0 is the only version of HWC that can do this.
-        hwc_wrapper->set({{display_list, nullptr, nullptr}});
+        hwc_wrapper->set(list);
     }
     else
     {
