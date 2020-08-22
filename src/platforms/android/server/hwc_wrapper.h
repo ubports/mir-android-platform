@@ -26,6 +26,7 @@
 #include <array>
 #include <functional>
 #include <vector>
+#include <list>
 
 struct hwc_display_contents_1;
 
@@ -40,13 +41,14 @@ struct ConfigIdTag;
 typedef IntWrapper<ConfigIdTag, uint32_t> ConfigId;
 
 struct HWCCallbacks;
+class DisplayContents;
 class HwcWrapper
 {
 public:
     virtual ~HwcWrapper() = default;
 
-    virtual void prepare(std::array<hwc_display_contents_1*, HWC_NUM_DISPLAY_TYPES> const&) const = 0;
-    virtual void set(std::array<hwc_display_contents_1*, HWC_NUM_DISPLAY_TYPES> const&) const = 0;
+    virtual void prepare(std::list<DisplayContents> const& contents) const = 0;
+    virtual void set(std::list<DisplayContents> const& contents) const = 0;
     //receive vsync, invalidate, and hotplug events from the driver.
     //As with the HWC api, these events MUST NOT call-back to the other functions in HwcWrapper. 
     virtual void subscribe_to_events(

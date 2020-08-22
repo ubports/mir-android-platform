@@ -46,6 +46,11 @@ bool plane_alpha_is_translucent(mg::Renderable const& renderable)
 }
 }
 
+bool mga::HwcDevice20::compatible_renderlist(RenderableList const& list)
+{
+    return false;
+}
+
 bool mga::HwcDevice::compatible_renderlist(RenderableList const& list)
 {
     if (list.empty())
@@ -87,24 +92,9 @@ bool mga::HwcDevice::buffer_is_onscreen(mg::Buffer const& buffer) const
 
 void mga::HwcDevice::commit(std::list<DisplayContents> const& contents)
 {
-#ifdef ANDROID_CAF
-    std::array<hwc_display_contents_1*, HWC_NUM_DISPLAY_TYPES> lists{{ nullptr, nullptr, nullptr, nullptr }};
-#else
-    std::array<hwc_display_contents_1*, HWC_NUM_DISPLAY_TYPES> lists{{ nullptr, nullptr, nullptr }};
-#endif
     std::vector<std::shared_ptr<mg::Buffer>> next_onscreen_overlay_buffers;
 
-    for (auto& content : contents)
-    {
-        if (content.name == mga::DisplayName::primary)
-            lists[HWC_DISPLAY_PRIMARY] = content.list.native_list();
-        else if (content.name == mga::DisplayName::external)
-            lists[HWC_DISPLAY_EXTERNAL] = content.list.native_list();
-
-        content.list.setup_fb(content.context.last_rendered_buffer());
-    }
-
-    hwc_wrapper->prepare(lists);
+    hwc_wrapper->prepare(contents);
 
     bool purely_overlays = true;
 
@@ -138,7 +128,7 @@ void mga::HwcDevice::commit(std::list<DisplayContents> const& contents)
         }
     }
 
-    hwc_wrapper->set(lists);
+    hwc_wrapper->set(contents);
     onscreen_overlay_buffers = std::move(next_onscreen_overlay_buffers);
 
     for (auto& content : contents)

@@ -58,6 +58,14 @@ private:
     std::chrono::milliseconds recommend_sleep{0};
 };
 
+class HwcDevice20 : public HwcDevice
+{
+public:
+    HwcDevice20(std::shared_ptr<HwcWrapper> const& hwc_wrapper) : HwcDevice(hwc_wrapper) {};
+
+    bool compatible_renderlist(RenderableList const& renderlist) override;
+};
+
 }
 }
 }

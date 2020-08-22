@@ -57,8 +57,8 @@ public:
         std::function<void()> const& invalidate_callback) override;
     void unsubscribe_from_events(void const* subscriber) noexcept override;
 
-    void prepare(std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const&) const override;
-    void set(std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const&) const override;
+    void prepare(std::list<DisplayContents> const& contents) const override;
+    void set(std::list<DisplayContents> const& contents) const override;
     void vsync_signal_on(DisplayName) const override;
     void vsync_signal_off(DisplayName) const override;
     void display_on(DisplayName) const override;
