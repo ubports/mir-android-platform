@@ -46,18 +46,6 @@ Homepage: https://launchpad.net/mir-android-platform
 # just go ahead. ~mir-team will notice and sync up the code again.
 Vcs-Git: https://code.launchpad.net/mir-android-platform
 
-Package: mir-android-tests
-Architecture: i386 amd64 armhf arm64
-Pre-Depends: ${misc:Pre-Depends}
-Depends: ${misc:Depends},
-         ${shlibs:Depends},
-Recommends: mir-demos,
-Description: Display Server for Ubuntu - android platform diagnostics utility
- Mir is a display server running on linux systems, with a focus on efficiency,
- robust operation and a well-defined driver model.
- .
- Contains unit tests
-
 Package: mir-platform-graphics-android15
 Section: libs
 Architecture: i386 amd64 armhf arm64
