@@ -94,10 +94,14 @@ static void hotplug_hook(HWC2EventListener* listener, int32_t sequenceId,
 {
     mga::Hwc2Callbacks const* callbacks{nullptr};
     std::unique_lock<std::mutex> lk(callback_lock);
-    if ((callbacks = reinterpret_cast<mga::Hwc2Callbacks const*>(listener)) && callbacks->self)
-        callbacks->self->hotplug(display_name(display), connected);
 
-    hwc2_compat_device_on_hotplug(callbacks->hwc2_device, display, connected);
+    mir::log_info("hotplug_hook(%d, %" PRIu64 ", %s, %s)",
+           sequenceId, display,
+           connected ? "connected" : "disconnected",
+           primaryDisplay ? "primary" : "external");
+
+    if ((callbacks = reinterpret_cast<mga::Hwc2Callbacks const*>(listener)) && callbacks->self)
+        callbacks->self->hotplug(display, connected, primaryDisplay);
 }
 static mga::Hwc2Callbacks hwc_callbacks{{vsync_hook, hotplug_hook, refresh_hook}, nullptr, nullptr};
 
@@ -142,15 +146,6 @@ mga::RealHwc2Wrapper::RealHwc2Wrapper(
     hwc2_compat_device_register_callback(hwc2_device, reinterpret_cast<HWC2EventListener*>(&hwc_callbacks),
         mga::RealHwc2Wrapper::composerSequenceId++);
     lk.lock();
-
-    for (int i = 0; i < 5 * 1000; ++i) {
-        // Wait at most 5s for hotplug events
-        if (auto hwc2_primary_display = hwc2_compat_device_get_display_by_id(hwc2_device, 0)) {
-            hwc2_displays.emplace(0, hwc2_compat_display_ptr{hwc2_primary_display});
-            break;
-        }
-        usleep(1000);
-    }
 }
 
 mga::RealHwc2Wrapper::~RealHwc2Wrapper()
@@ -339,20 +334,52 @@ void mga::RealHwc2Wrapper::vsync(DisplayName name, mg::Frame::Timestamp timestam
     }
 }
 
-void mga::RealHwc2Wrapper::hotplug(DisplayName name, bool connected) noexcept
+void mga::RealHwc2Wrapper::hotplug(hwc2_display_t disp, bool connected, bool primaryDisplay) noexcept
 {
-    is_plugged[mga::as_hwc_display(name)].store(connected);
+    // Make sure to register the hotplug before triggering updates
+    hwc2_compat_device_on_hotplug(hwc2_device, disp, connected);
 
-    std::unique_lock<std::mutex> lk(callback_map_lock);
-    for(auto const& callbacks : callback_map)
-    {
-        try
-        {
-            callbacks.second.hotplug(name, connected);
+    int displayId = primaryDisplay ? HWC_DISPLAY_PRIMARY : HWC_DISPLAY_EXTERNAL;
+
+    if (auto newDisplay = hwc2_compat_device_get_display_by_id(hwc2_device, disp)) {
+
+        if (connected) {
+            mir::log_warning("hotplug: Adding display %" PRIu64 " with id %i", disp, displayId);
+
+            // Check if this is the same display
+            auto &oldDisplay = hwc2_displays[displayId];
+            if (oldDisplay) {
+                mir::log_warning("hotplug: We have an old display with this id, replacing this!");
+            }
+
+            hwc2_displays[displayId] = {hwc2_compat_display_ptr{newDisplay}};
+        } else {
+            auto &oldDisplay = hwc2_displays[displayId];
+            if (!oldDisplay) {
+                mir::log_warning("hotplug: Could not find display to remove, ignoring");
+            } else {
+                mir::log_info("hotplug: Removing display %i", displayId);
+                hwc2_displays.erase(displayId);
+            }
+
         }
-        catch (...)
+
+        is_plugged[displayId].store(connected);
+
+        auto name = display_name(disp);
+        std::unique_lock<std::mutex> lk(callback_map_lock);
+        for(auto const& callbacks : callback_map)
         {
+            try
+            {
+                callbacks.second.hotplug(name, connected);
+            }
+            catch (...)
+            {
+            }
         }
+    } else {
+        mir::log_warning("hotplug: Something went wrong when trying to get display id!");
     }
 }
 
