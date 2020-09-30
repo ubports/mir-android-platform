@@ -37,6 +37,21 @@ namespace mga=mir::graphics::android;
 
 namespace
 {
+static inline const char* getErrorName(hwc2_error_t error) {
+    switch (error) {
+        case HWC2_ERROR_NONE: return "None";
+        case HWC2_ERROR_BAD_CONFIG: return "BadConfig";
+        case HWC2_ERROR_BAD_DISPLAY: return "BadDisplay";
+        case HWC2_ERROR_BAD_LAYER: return "BadLayer";
+        case HWC2_ERROR_BAD_PARAMETER: return "BadParameter";
+        case HWC2_ERROR_HAS_CHANGES: return "HasChanges";
+        case HWC2_ERROR_NO_RESOURCES: return "NoResources";
+        case HWC2_ERROR_NOT_VALIDATED: return "NotValidated";
+        case HWC2_ERROR_UNSUPPORTED: return "Unsupported";
+        default: return "Unknown";
+    }
+}
+
 int num_displays(std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& displays)
 {
     return std::distance(displays.begin(),
@@ -159,8 +174,11 @@ void mga::RealHwc2Wrapper::prepare(
 {
     report->report_list_submitted_to_prepare(hwc1_displays);
     for (int display_id = 0; display_id < num_displays(hwc1_displays); display_id++) {
+        if (!active_displays[display_id])
+            continue;
+
         auto hwc1_display = hwc1_displays[display_id];
-        if (display_id == 0) { // primary display
+        if (display_id == HWC_DISPLAY_PRIMARY || display_id == HWC_DISPLAY_EXTERNAL) { // only primary and external for now
             auto it = display_contents.find(display_id);
 
             if (it == display_contents.end()) {
@@ -174,46 +192,47 @@ void mga::RealHwc2Wrapper::prepare(
                 auto layer = hwc2_compat_display_create_layer(hwc2_display);
                 layers.push_back(layer);
 
+                auto left = hwc1_display->hwLayers[0].displayFrame.left;
+                auto top = hwc1_display->hwLayers[0].displayFrame.top;
                 auto width = hwc1_display->hwLayers[0].displayFrame.right;
                 auto height = hwc1_display->hwLayers[0].displayFrame.bottom;
 
                 hwc2_compat_layer_set_composition_type(layer, HWC2_COMPOSITION_CLIENT);
                 hwc2_compat_layer_set_blend_mode(layer, HWC2_BLEND_MODE_NONE);
-                hwc2_compat_layer_set_source_crop(layer, 0.0f, 0.0f, width, height);
-                hwc2_compat_layer_set_display_frame(layer, 0, 0, width, height);
-                hwc2_compat_layer_set_visible_region(layer, 0, 0, width, height);
+                hwc2_compat_layer_set_source_crop(layer, left, top, width, height);
+                hwc2_compat_layer_set_display_frame(layer, left, top, width, height);
+                hwc2_compat_layer_set_visible_region(layer, left, top, width, height);
+
+            }
+
+            uint32_t num_requests = 0;
+            uint32_t num_types = 0;
+
+            auto error = hwc2_compat_display_validate(hwc2_display, &num_types, &num_requests);
+
+            if (error != HWC2_ERROR_NONE && error != HWC2_ERROR_HAS_CHANGES) {
+                std::stringstream ss;
+                ss << "prepare: validate failed for display with id" << display_id << ": " << ::getErrorName(error);
+                BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
+                return;
+            }
+
+            if (num_types || num_requests) {
+                std::stringstream ss;
+                ss << "prepare: validate required changes for display with id " << display_id << ": " << ::getErrorName(error);
+                BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
+                return;
+            }
+
+            error = hwc2_compat_display_accept_changes(hwc2_display);
+            if (error != HWC2_ERROR_NONE) {
+                std::stringstream ss;
+                ss << "prepare: acceptChanges failed: " << ::getErrorName(error);
+                BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
+                return;
             }
         }
     }
-
-    uint32_t num_types = 0;
-    uint32_t num_requests = 0;
-    int display_id = 0;
-    auto hwc2_display = hwc2_displays[display_id].get();
-
-    auto error = hwc2_compat_display_validate(hwc2_display, &num_types, &num_requests);
-
-    if (error != HWC2_ERROR_NONE && error != HWC2_ERROR_HAS_CHANGES) {
-        std::stringstream ss;
-        ss << "prepare: validate failed for display " << display_id << ": " << error;
-        BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
-    }
-
-    if (num_types || num_requests) {
-        std::stringstream ss;
-        ss << "prepare: validate required changes for display " << display_id << ": " << error;
-        BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
-        return;
-    }
-
-    error = hwc2_compat_display_accept_changes(hwc2_display);
-    if (error != HWC2_ERROR_NONE) {
-        std::stringstream ss;
-        ss << "prepare: acceptChanges failed: " << error;
-        BOOST_THROW_EXCEPTION(std::runtime_error(ss.str()));
-        return;
-    }
-
     report->report_prepare_done(hwc1_displays);
 }
 
@@ -229,63 +248,84 @@ void mga::RealHwc2Wrapper::set(
 {
     report->report_set_list(hwc1_displays);
 
-    int display_id = 0;
-    auto hwc2_display = hwc2_displays[display_id].get();
-    auto& fblayer = hwc1_displays[0]->hwLayers[1];
-    static int last_present_fence = -1;
-    bool sync_before_set = true;
+    for (int display_id = 0; display_id < num_displays(hwc1_displays); display_id++) {
+        if (!active_displays[display_id])
+            continue;
 
-    assert(contents.size() == 1); // No multiple displays support that far
+        auto hwc1_display = hwc1_displays[display_id];
+        if (display_id == HWC_DISPLAY_PRIMARY || display_id == HWC_DISPLAY_EXTERNAL) { // only primary and external for now
+            auto hwc2_display = hwc2_displays[display_id].get();
+            auto& fblayer = hwc1_displays[display_id]->hwLayers[1];
+            bool sync_before_set = true;
 
-    std::shared_ptr<mg::Buffer> buffer = nullptr;
-    for (auto& it : contents.front().list) {
-        assert(buffer == nullptr); // There should be only a single layer with buffer
-        buffer = it.layer.buffer();
+            std::shared_ptr<mg::Buffer> buffer = nullptr;
+            for (auto& content : contents)
+            {
+                if (content.name == display_name(display_id)) {
+                    for (auto& it : content.list) {
+                        assert(buffer == nullptr); // There should be only a single layer with buffer
+                        buffer = it.layer.buffer();
+                    }
+                }
+            }
+
+            if (buffer == nullptr) {
+                mir::log_warning("Found no buffers for display %i", display_id, " continuing without");
+                continue;
+            }
+
+            auto acquire_fence_fd = fblayer.acquireFenceFd;
+
+            if (sync_before_set && acquire_fence_fd >= 0) {
+                sync_wait(acquire_fence_fd, -1);
+                close(acquire_fence_fd);
+                acquire_fence_fd = -1;
+            }
+
+            auto native_buffer = mga::to_native_buffer_checked(buffer->native_buffer_handle());
+
+            hwc2_compat_display_set_client_target(hwc2_display, /* slot */0, native_buffer->anwb(),
+                                                acquire_fence_fd,
+                                                HAL_DATASPACE_UNKNOWN);
+
+            int presentFence = -1;
+
+            // FIXME: find a propper fix
+            // Validate here too as sometimes a display may not be validated at this point
+            uint32_t num_requests = 0;
+            uint32_t num_types = 0;
+            hwc2_compat_display_validate(hwc2_display, &num_types, &num_requests);
+
+            if (auto rc = hwc2_compat_display_present(hwc2_display, &presentFence)) {
+                // Do not throw an exception in this case as it occasionaly fails on
+                // some devices (found on lavender) but next try will likely succeed.
+                mir::log_warning("set: error during hwc display present. rc = %s", getErrorName(rc));
+            }
+            fblayer.releaseFenceFd = presentFence;
+
+            auto _last_present_fence = last_present_fence[display_id];
+            if (_last_present_fence != -1) {
+                sync_wait(_last_present_fence, -1);
+                close(_last_present_fence);
+            }
+
+            last_present_fence[display_id] = presentFence != -1 ? dup(presentFence) : -1;
+        }
     }
-
-    auto acquire_fence_fd = fblayer.acquireFenceFd;
-
-    if (sync_before_set && acquire_fence_fd >= 0) {
-        sync_wait(acquire_fence_fd, -1);
-        close(acquire_fence_fd);
-        acquire_fence_fd = -1;
-    }
-
-    auto native_buffer = mga::to_native_buffer_checked(buffer->native_buffer_handle());
-
-    hwc2_compat_display_set_client_target(hwc2_display, /* slot */0, native_buffer->anwb(),
-                                          acquire_fence_fd,
-                                          HAL_DATASPACE_UNKNOWN);
-
-    int presentFence = -1;
-
-    if (auto rc = hwc2_compat_display_present(hwc2_display, &presentFence)) {
-        // Do not throw an exception in this case as it occasionaly fails on
-        // some devices (found on lavender) but next try will likely succeed.
-        mir::log_warning("error during hwc set(). rc = %d", rc);
-    }
-    fblayer.releaseFenceFd = presentFence;
-
-    if (last_present_fence != -1) {
-        sync_wait(last_present_fence, -1);
-        close(last_present_fence);
-    }
-
-    last_present_fence = presentFence != -1 ? dup(presentFence) : -1;
 
     report->report_set_done(hwc1_displays);
 }
 
 void mga::RealHwc2Wrapper::vsync_signal_on(DisplayName display_name) const
 {
-    auto hwc2_display = hwc2_displays[as_hwc_display(mga::DisplayName::primary)].get();
+    auto hwc2_display = hwc2_displays[as_hwc_display(display_name)].get();
     hwc2_compat_display_set_vsync_enabled(hwc2_display, HWC2_VSYNC_ENABLE);
     report->report_vsync_on();
 }
 
 void mga::RealHwc2Wrapper::vsync_signal_off(DisplayName display_name) const
 {
-    auto hwc2_display = hwc2_displays[as_hwc_display(mga::DisplayName::primary)].get();
+    auto hwc2_display = hwc2_displays[as_hwc_display(display_name)].get();
     hwc2_compat_display_set_vsync_enabled(hwc2_display, HWC2_VSYNC_DISABLE);
     report->report_vsync_off();
 }
@@ -339,32 +379,34 @@ void mga::RealHwc2Wrapper::hotplug(hwc2_display_t disp, bool connected, bool pri
     // Make sure to register the hotplug before triggering updates
     hwc2_compat_device_on_hotplug(hwc2_device, disp, connected);
 
-    int displayId = primaryDisplay ? HWC_DISPLAY_PRIMARY : HWC_DISPLAY_EXTERNAL;
+    int display_id = primaryDisplay ? HWC_DISPLAY_PRIMARY : HWC_DISPLAY_EXTERNAL;
 
-    if (auto newDisplay = hwc2_compat_device_get_display_by_id(hwc2_device, disp)) {
+    if (auto new_display = hwc2_compat_device_get_display_by_id(hwc2_device, disp)) {
 
         if (connected) {
-            mir::log_warning("hotplug: Adding display %" PRIu64 " with id %i", disp, displayId);
+            mir::log_warning("hotplug: Adding display %" PRIu64 " with id %i", disp, display_id);
 
             // Check if this is the same display
-            auto &oldDisplay = hwc2_displays[displayId];
+            auto &oldDisplay = hwc2_displays[display_id];
             if (oldDisplay) {
                 mir::log_warning("hotplug: We have an old display with this id, replacing this!");
             }
 
-            hwc2_displays[displayId] = {hwc2_compat_display_ptr{newDisplay}};
+            hwc2_displays[display_id] = {hwc2_compat_display_ptr{new_display}};
+            last_present_fence[display_id] = -1;
+            active_displays[display_id] = true;
         } else {
-            auto &oldDisplay = hwc2_displays[displayId];
+            auto &oldDisplay = hwc2_displays[display_id];
             if (!oldDisplay) {
                 mir::log_warning("hotplug: Could not find display to remove, ignoring");
             } else {
-                mir::log_info("hotplug: Removing display %i", displayId);
-                hwc2_displays.erase(displayId);
+                mir::log_info("hotplug: Removing display %i", display_id);
+                active_displays[display_id] = false;
             }
 
         }
 
-        is_plugged[displayId].store(connected);
+        is_plugged[display_id].store(connected);
 
         auto name = display_name(disp);
         std::unique_lock<std::mutex> lk(callback_map_lock);
@@ -454,9 +496,8 @@ int mga::RealHwc2Wrapper::display_attributes(
 
 void mga::RealHwc2Wrapper::power_mode(DisplayName display_name, PowerMode mode) const
 {
-    if (display_name == mga::DisplayName::primary) {
-        int display_id = 0;
-        auto hwc2_display = hwc2_displays[display_id].get();
+    if (display_name == mga::DisplayName::primary || display_name == mga::DisplayName::external) {
+        auto hwc2_display = hwc2_displays[mga::as_hwc_display(display_name)].get();
         auto hwc2_mode = HWC2_POWER_MODE_ON;
 
         switch (mode) {
