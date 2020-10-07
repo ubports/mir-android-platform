@@ -484,10 +484,10 @@ int mga::RealHwc2Wrapper::display_attributes(
                 values[i] = config->vsyncPeriod;
                 break;
             case HWC_DISPLAY_DPI_X:
-                values[i] = config->dpiX;
+                values[i] = config->dpiX * 1000;
                 break;
             case HWC_DISPLAY_DPI_Y:
-                values[i] = config->dpiY;
+                values[i] = config->dpiY * 1000;
                 break;
         }
     }
