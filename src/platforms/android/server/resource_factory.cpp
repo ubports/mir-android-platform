@@ -67,7 +67,7 @@ mga::ResourceFactory::create_hwc_wrapper(std::shared_ptr<mga::HwcReport> const& 
     auto hwc_version = HWC_MODULE_API_VERSION_0_1;
     int rc = hw_get_module(HWC_HARDWARE_MODULE_ID, &module);
 
-    if ((rc != 0) && module && module->methods && module->methods->open &&
+    if ((rc == 0) && module && module->methods && module->methods->open &&
         module->methods->open(module, HWC_HARDWARE_COMPOSER, &hwc_device_raw) &&
         hwc_device_raw)
     {
