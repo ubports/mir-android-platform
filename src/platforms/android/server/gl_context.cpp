@@ -59,8 +59,8 @@ static EGLDisplay create_and_initialize_display()
     if (eglInitialize(egl_display, &major, &minor) == EGL_FALSE)
         BOOST_THROW_EXCEPTION(mg::egl_error("eglInitialize failure"));
 
-    if ((major != 1) || (minor != 4))
-        BOOST_THROW_EXCEPTION(std::runtime_error("must have EGL 1.4"));
+    if (major < 1 || (major == 1 && minor < 4))
+        BOOST_THROW_EXCEPTION(std::runtime_error("must have at least EGL 1.4"));
     return egl_display;
 }
 
