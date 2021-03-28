@@ -29,7 +29,6 @@
 #include "hwc_layers.h"
 #include "hwc_device.h"
 #include "hwc_fb_device.h"
-#include "hwc2_device.h"
 #include "graphic_buffer_allocator.h"
 #include "cmdstream_sync_factory.h"
 #include "android_format_conversion-inl.h"
@@ -162,7 +161,7 @@ std::unique_ptr<mga::DisplayDevice> mga::HalComponentFactory::create_display_dev
 
             case mga::HwcVersion::hwc20:
                 return std::unique_ptr<mga::DisplayDevice>(
-                    new mga::Hwc2Device(hwc_wrapper));
+                    new mga::Hwc20Device(hwc_wrapper));
 
             case mga::HwcVersion::unknown:
             default:

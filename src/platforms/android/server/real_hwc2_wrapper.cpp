@@ -52,13 +52,6 @@ static inline const char* getErrorName(hwc2_error_t error) {
     }
 }
 
-int num_displays(std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& displays)
-{
-    return std::distance(displays.begin(),
-        std::find_if(displays.begin(), displays.end(),
-            [](hwc_display_contents_1_t* d){ return d == nullptr; }));
-}
-
 mga::DisplayName display_name(int raw_name)
 {
     switch(raw_name)
@@ -170,14 +163,14 @@ mga::RealHwc2Wrapper::~RealHwc2Wrapper()
 }
 
 void mga::RealHwc2Wrapper::prepare(
-    std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& hwc1_displays) const
+    std::list<DisplayContents> const& contents) const
 {
-    report->report_list_submitted_to_prepare(hwc1_displays);
-    for (int display_id = 0; display_id < num_displays(hwc1_displays); display_id++) {
+    //report->report_list_submitted_to_prepare(hwc1_displays);
+    for (auto content : contents) {
+        auto display_id = as_hwc_display(content.name);
         if (!active_displays[display_id])
             continue;
 
-        auto hwc1_display = hwc1_displays[display_id];
         if (display_id == HWC_DISPLAY_PRIMARY || display_id == HWC_DISPLAY_EXTERNAL) { // only primary and external for now
             auto it = display_contents.find(display_id);
 
@@ -187,15 +180,16 @@ void mga::RealHwc2Wrapper::prepare(
 
             auto hwc2_display = hwc2_displays[display_id].get();
             auto& layers = it->second;
+            auto native_list = content.list.native_list();
 
-            if (hwc1_display->numHwLayers && layers.size() < 1) {
+            if (native_list->numHwLayers && layers.size() < 1) {
                 auto layer = hwc2_compat_display_create_layer(hwc2_display);
                 layers.push_back(layer);
 
-                auto left = hwc1_display->hwLayers[0].displayFrame.left;
-                auto top = hwc1_display->hwLayers[0].displayFrame.top;
-                auto width = hwc1_display->hwLayers[0].displayFrame.right;
-                auto height = hwc1_display->hwLayers[0].displayFrame.bottom;
+                auto left = native_list->hwLayers[0].displayFrame.left;
+                auto top = native_list->hwLayers[0].displayFrame.top;
+                auto width = native_list->hwLayers[0].displayFrame.right;
+                auto height = native_list->hwLayers[0].displayFrame.bottom;
 
                 hwc2_compat_layer_set_composition_type(layer, HWC2_COMPOSITION_CLIENT);
                 hwc2_compat_layer_set_blend_mode(layer, HWC2_BLEND_MODE_NONE);
@@ -233,40 +227,28 @@ void mga::RealHwc2Wrapper::prepare(
             }
         }
     }
-    report->report_prepare_done(hwc1_displays);
+   // report->report_prepare_done(hwc1_displays);
 }
 
 void mga::RealHwc2Wrapper::set(
-    std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& hwc1_displays) const
+    std::list<DisplayContents> const& contents) const
 {
-    BOOST_THROW_EXCEPTION(std::logic_error("hwc2 set() called without contents list"));
-}
+   // report->report_set_list(hwc1_displays);
 
-void mga::RealHwc2Wrapper::set(
-    std::array<hwc_display_contents_1_t*, HWC_NUM_DISPLAY_TYPES> const& hwc1_displays,
-    std::list<mga::DisplayContents> const& contents) const
-{
-    report->report_set_list(hwc1_displays);
-
-    for (int display_id = 0; display_id < num_displays(hwc1_displays); display_id++) {
+    for (auto content : contents) {
+        auto display_id = as_hwc_display(content.name);
         if (!active_displays[display_id])
             continue;
 
-        auto hwc1_display = hwc1_displays[display_id];
         if (display_id == HWC_DISPLAY_PRIMARY || display_id == HWC_DISPLAY_EXTERNAL) { // only primary and external for now
             auto hwc2_display = hwc2_displays[display_id].get();
-            auto& fblayer = hwc1_displays[display_id]->hwLayers[1];
+            auto& fblayer = content.list.native_list()->hwLayers[1];
             bool sync_before_set = true;
 
             std::shared_ptr<mg::Buffer> buffer = nullptr;
-            for (auto& content : contents)
-            {
-                if (content.name == display_name(display_id)) {
-                    for (auto& it : content.list) {
-                        assert(buffer == nullptr); // There should be only a single layer with buffer
-                        buffer = it.layer.buffer();
-                    }
-                }
+            for (auto& it : content.list) {
+                assert(buffer == nullptr); // There should be only a single layer with buffer
+                buffer = it.layer.buffer();
             }
 
             if (buffer == nullptr) {
@@ -313,7 +295,7 @@ void mga::RealHwc2Wrapper::set(
         }
     }
 
-    report->report_set_done(hwc1_displays);
+   // report->report_set_done(hwc1_displays);
 }
 
 void mga::RealHwc2Wrapper::vsync_signal_on(DisplayName display_name) const
