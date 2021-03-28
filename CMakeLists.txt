@@ -8,17 +8,8 @@ project(MirAndroidPlatform)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-set(MIR_VERSION_MAJOR 1)
-set(MIR_VERSION_MINOR 1)
-set(MIR_VERSION_PATCH 0)
-
-add_definitions(-DMIR_VERSION_MAJOR=${MIR_VERSION_MAJOR})
-add_definitions(-DMIR_VERSION_MINOR=${MIR_VERSION_MINOR})
-add_definitions(-DMIR_VERSION_MICRO=${MIR_VERSION_PATCH})
 add_definitions(-D_GNU_SOURCE)
 add_definitions(-D_FILE_OFFSET_BITS=64)
-
-set(MIR_VERSION ${MIR_VERSION_MAJOR}.${MIR_VERSION_MINOR}.${MIR_VERSION_PATCH})
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 execute_process(
@@ -182,6 +173,19 @@ pkg_check_modules(MIRCORE REQUIRED mircore)
 pkg_check_modules(MIRPLATFORM REQUIRED mirplatform)
 pkg_check_modules(MIRGLRENDERER REQUIRED mir-renderer-gl-dev)
 pkg_check_modules(MIRRENDERER REQUIRED mirrenderer)
+
+# Set version based on mirplatform
+string(REPLACE "." ";" VERSION_LIST ${MIRPLATFORM_VERSION})
+list(GET VERSION_LIST 0 MIR_VERSION_MAJOR)
+list(GET VERSION_LIST 1 MIR_VERSION_MINOR)
+list(GET VERSION_LIST 2 MIR_VERSION_PATCH)
+
+add_definitions(-DMIR_VERSION_MAJOR=${MIR_VERSION_MAJOR})
+add_definitions(-DMIR_VERSION_MINOR=${MIR_VERSION_MINOR})
+add_definitions(-DMIR_VERSION_MICRO=${MIR_VERSION_PATCH})
+set(MIR_VERSION ${MIR_VERSION_MAJOR}.${MIR_VERSION_MINOR}.${MIR_VERSION_PATCH})
+
+message("Bulding Mir android platfrom version ${MIR_VERSION}")
 
 include_directories(
     ${PROJECT_SOURCE_DIR}
