@@ -46,6 +46,70 @@ bool plane_alpha_is_translucent(mg::Renderable const& renderable)
 }
 }
 
+bool mga::Hwc20Device::compatible_renderlist(RenderableList const&)
+{
+    return false;
+}
+
+void mga::Hwc20Device::commit(std::list<DisplayContents> const& contents)
+{
+    std::vector<std::shared_ptr<mg::Buffer>> next_onscreen_overlay_buffers;
+
+    hwc_wrapper->prepare(contents);
+
+    bool purely_overlays = true;
+
+    for (auto& content : contents)
+    {
+        if (content.list.needs_swapbuffers())
+        {
+            auto rejected_renderables = content.list.rejected_renderables();
+            if (!rejected_renderables.empty())
+            {
+                auto current_context = mir::raii::paired_calls(
+                    [&]{ content.context.make_current(); },
+                    [&]{ content.context.release_current(); });
+                content.compositor.render(std::move(rejected_renderables), content.list_offset, content.context);
+            }
+            content.list.setup_fb(content.context.last_rendered_buffer());
+            content.list.swap_occurred();
+            purely_overlays = false;
+        }
+
+        //setup overlays
+        for (auto& layer : content.list)
+        {
+            auto buffer = layer.layer.buffer();
+            if (layer.layer.is_overlay() && buffer)
+            {
+                if (!buffer_is_onscreen(*buffer))
+                    layer.layer.set_acquirefence();
+                next_onscreen_overlay_buffers.push_back(buffer);
+            }
+        }
+    }
+
+    hwc_wrapper->set(contents);
+    onscreen_overlay_buffers = std::move(next_onscreen_overlay_buffers);
+
+    for (auto& content : contents)
+    {
+        for (auto& it : content.list)
+            it.layer.release_buffer();
+
+        mir::Fd retire_fd(content.list.retirement_fence());
+    }
+
+    /*
+     * Test results (how long can we sleep for without missing a frame?):
+     *   arale:   10ms  (TODO: Find out why arale is so slow)
+     *   mako:    15ms
+     *   krillin: 11ms  (to be fair, the display is 67Hz)
+     */
+    using namespace std;
+    recommend_sleep = purely_overlays ? 10ms : 0ms;
+}
+
 bool mga::HwcDevice::compatible_renderlist(RenderableList const& list)
 {
     if (list.empty())

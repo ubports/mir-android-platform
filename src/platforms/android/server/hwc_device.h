@@ -49,13 +49,21 @@ public:
     std::chrono::milliseconds recommended_sleep() const override;
     bool can_swap_buffers() const override;
 
-private:
+protected:
     bool buffer_is_onscreen(Buffer const&) const;
-    std::vector<std::shared_ptr<Buffer>> onscreen_overlay_buffers;
 
     std::shared_ptr<HwcWrapper> const hwc_wrapper;
-    std::shared_ptr<SyncFileOps> const sync_ops;
     std::chrono::milliseconds recommend_sleep{0};
+    std::vector<std::shared_ptr<Buffer>> onscreen_overlay_buffers;
+};
+
+class Hwc20Device : public HwcDevice
+{
+public:
+    Hwc20Device(std::shared_ptr<HwcWrapper> const& hwc_wrapper) : HwcDevice(hwc_wrapper) {};
+
+    bool compatible_renderlist(RenderableList const& renderlist) override;
+    void commit(std::list<DisplayContents> const& contents) override;
 };
 
 }
